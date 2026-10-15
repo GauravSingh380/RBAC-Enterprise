@@ -1,0 +1,75 @@
+/* Ant Design handles almost all styling via theme tokens (see src/theme/ThemeProvider.tsx).
+   This file only holds a few global resets and layout helpers. */
+
+* { box-sizing: border-box; }
+
+html, body, #root { min-height: 100%; }
+
+body {
+  margin: 0;
+  -webkit-font-smoothing: antialiased;
+  transition: background-color 0.2s ease;
+}
+
+code { font-family: ui-monospace, 'Cascadia Code', Consolas, monospace; font-size: 0.9em; }
+
+/* Brand mark shared by public header and sidebar */
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 700;
+  font-size: 1.15rem;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+}
+.brand-logo {
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  display: grid;
+  place-items: center;
+  color: #fff;
+  font-size: 0.95rem;
+  background: linear-gradient(135deg, #3e63dd, #8e4ec6);
+  flex-shrink: 0;
+}
+
+/* Sidebar */
+.app-sider .ant-layout-sider-children { display: flex; flex-direction: column; }
+.app-sider-brand { height: 64px; display: flex; align-items: center; padding: 0 20px; overflow: hidden; }
+.app-sider-menu { flex: 1; overflow-y: auto; border-inline-end: 0 !important; }
+
+/* Sticky header */
+.app-header {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  backdrop-filter: saturate(180%) blur(8px);
+}
+
+/* Hero background on the home page */
+.hero {
+  text-align: center;
+  padding: clamp(3rem, 10vw, 6rem) 1rem clamp(2rem, 6vw, 4rem);
+}
+.hero-title.ant-typography {
+  font-size: clamp(2.2rem, 6vw, 3.5rem);
+  letter-spacing: -0.03em;
+  margin-bottom: 0.5rem;
+}
+.gradient-text {
+  background: linear-gradient(135deg, #3e63dd, #8e4ec6);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.full-page-center { min-height: 60vh; display: grid; place-items: center; }
+
+@media (max-width: 575px) {
+  .hide-on-mobile { display: none !important; }
+}

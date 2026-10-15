@@ -1,0 +1,155 @@
+/* Public website — layout only. Colours come from the Ant Design theme (light / dark) through inline styles. */
+
+.wf-section {
+  padding: clamp(48px, 8vw, 88px) 16px;
+}
+.wf-container {
+  max-width: 1160px;
+  margin: 0 auto;
+}
+.wf-narrow {
+  max-width: 760px;
+  margin: 0 auto;
+}
+.wf-center {
+  text-align: center;
+}
+.wf-eyebrow {
+  display: inline-block;
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+}
+.wf-h1 {
+  font-size: clamp(2rem, 4.6vw, 3.4rem);
+  line-height: 1.1;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  margin: 0 0 16px;
+}
+.wf-h2 {
+  font-size: clamp(1.6rem, 3vw, 2.3rem);
+  line-height: 1.2;
+  font-weight: 750;
+  letter-spacing: -0.01em;
+  margin: 0 0 12px;
+}
+.wf-lead {
+  font-size: clamp(1rem, 1.4vw, 1.18rem);
+  line-height: 1.6;
+  margin: 0 0 28px;
+}
+
+/* hero */
+.wf-hero-grid {
+  display: grid;
+  grid-template-columns: 1.05fr 1fr;
+  gap: clamp(24px, 5vw, 64px);
+  align-items: center;
+  padding: 8px 0 40px;
+}
+.wf-hero-single {
+  text-align: center;
+  max-width: 820px;
+  margin: 0 auto;
+}
+.wf-buttons {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.wf-hero-single .wf-buttons {
+  justify-content: center;
+}
+
+/* grids */
+.wf-grid {
+  display: grid;
+  gap: 20px;
+}
+.wf-cols-2 {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr));
+}
+.wf-cols-3 {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr));
+}
+.wf-cols-4 {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 210px), 1fr));
+}
+.wf-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: clamp(24px, 5vw, 64px);
+  align-items: center;
+}
+.wf-row + .wf-row {
+  margin-top: clamp(48px, 7vw, 88px);
+}
+.wf-row.wf-reverse > :first-child {
+  order: 2;
+}
+
+.wf-card {
+  border-radius: 14px;
+  padding: 24px;
+  height: 100%;
+}
+.wf-img {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: 14px;
+}
+.wf-logos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px 40px;
+  justify-content: center;
+  align-items: center;
+}
+.wf-logos img {
+  max-height: 40px;
+  max-width: 140px;
+  filter: grayscale(1);
+  opacity: 0.75;
+}
+
+/* header */
+.wf-header-inner {
+  max-width: 1160px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  height: 64px;
+  padding: 0 16px;
+}
+.wf-nav {
+  display: flex;
+  gap: 4px;
+}
+.wf-footer-grid {
+  display: grid;
+  grid-template-columns: 1.4fr repeat(auto-fit, minmax(140px, 1fr));
+  gap: 32px;
+}
+
+@media (max-width: 860px) {
+  .wf-hero-grid,
+  .wf-row {
+    grid-template-columns: 1fr;
+  }
+  .wf-row.wf-reverse > :first-child {
+    order: 0;
+  }
+  .wf-hide-mobile {
+    display: none !important;
+  }
+}
+@media (min-width: 861px) {
+  .wf-show-mobile {
+    display: none !important;
+  }
+}

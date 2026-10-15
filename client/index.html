@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Team-Flex</title>
+    <script>
+      // Apply the saved theme + font size before React loads (prevents a white flash in dark mode)
+      (function () {
+        try {
+          var mode = localStorage.getItem('tf-theme') || 'system';
+          var dark = mode === 'dark' || (mode === 'system' && matchMedia('(prefers-color-scheme: dark)').matches);
+          var root = document.documentElement;
+          root.dataset.theme = dark ? 'dark' : 'light';
+          root.style.colorScheme = dark ? 'dark' : 'light';
+          root.style.background = dark ? '#000000' : '#f5f5f5';
+          var size = Number(localStorage.getItem('tf-font-size'));
+          if (size >= 12 && size <= 20) root.style.fontSize = size + 'px';
+        } catch (e) {}
+      })();
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
