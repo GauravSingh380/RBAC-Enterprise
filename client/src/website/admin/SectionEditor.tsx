@@ -9,7 +9,7 @@ import { websiteAdminApi } from '../api'
 import { FeatureIcon } from '../icons'
 import { ICON_NAMES } from '../iconMap'
 import type { DraftPage, PlanInfo, Section } from '../types'
-import { SAFE_HREF, sectionLabel } from '../websiteMeta'
+import { INQUIRY_TYPES, SAFE_HREF, sectionLabel } from '../websiteMeta'
 import { cleanContent } from './formMeta'
 import { MediaField } from './MediaLibrary'
 
@@ -363,6 +363,44 @@ function Fields({ type, plans }: { type: Section['type']; plans: PlanInfo[] }) {
               </>
             )}
           </ListEditor>
+        </>
+      )
+    case 'contact_form':
+      return (
+        <>
+          <Title label="Heading" />
+          <Form.Item name="subtitle" label="Text next to the form">
+            <TextArea autoSize={{ minRows: 2 }} maxLength={400} />
+          </Form.Item>
+          <Form.Item name="topics" label="Topics visitors can choose (the first one is pre-selected)" rules={[{ required: true, type: 'array', min: 1, message: 'Pick at least one topic' }]}>
+            <Select mode="multiple" options={INQUIRY_TYPES} />
+          </Form.Item>
+          <Row gutter={8}>
+            <Col span={8}><Form.Item name="showCompany" label="Ask for the company" valuePropName="checked"><Switch /></Form.Item></Col>
+            <Col span={8}><Form.Item name="showTeamSize" label="Ask for the team size" valuePropName="checked"><Switch /></Form.Item></Col>
+            <Col span={8}><Form.Item name="showPhone" label="Ask for a phone number" valuePropName="checked"><Switch /></Form.Item></Col>
+          </Row>
+          <Form.Item name="successTitle" label="Thank-you message" rules={[{ required: true }]}>
+            <Input maxLength={140} />
+          </Form.Item>
+          <Form.Item name="successText" label="Thank-you text">
+            <Input maxLength={400} />
+          </Form.Item>
+          <ListEditor name="contactPoints" title="Contact details next to the form" addLabel="Add contact detail" max={6} newItem={{ icon: 'mail', label: 'Email', value: '' }}>
+            {(f) => (
+              <Row gutter={8}>
+                <Col span={6}>
+                  <Form.Item name={[f.name, 'icon']} label="Icon">
+                    <Select showSearch options={ICON_NAMES.map((n) => ({ value: n, label: <Space><FeatureIcon name={n} />{n}</Space> }))} />
+                  </Form.Item>
+                </Col>
+                <Col span={6}><Form.Item name={[f.name, 'label']} label="Label" rules={[{ required: true }]}><Input maxLength={40} /></Form.Item></Col>
+                <Col span={12}><Form.Item name={[f.name, 'value']} label="Text" rules={[{ required: true }]}><Input maxLength={200} /></Form.Item></Col>
+                <Col span={24}><Form.Item name={[f.name, 'href']} label="Link (optional)" rules={[hrefRule]}><Input placeholder="mailto:hello@your-domain.com" /></Form.Item></Col>
+              </Row>
+            )}
+          </ListEditor>
+          <Typography.Text type="secondary">Messages arrive in Website → Inquiries; you get an e-mail for each one.</Typography.Text>
         </>
       )
     default:

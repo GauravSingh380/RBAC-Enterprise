@@ -158,6 +158,47 @@ export const templates = {
     ),
     text: `Hi ${d.name},\n\n${d.items.map((i) => `- ${i.title}\n  ${i.url}`).join('\n')}\n\nAll notifications: ${d.url}\n`,
   }),
+
+  // ---- public website: contact form (server/src/modules/website/website.inquiries.ts)
+  /** to the visitor: we got your message */
+  inquiryReceived: (d: { name: string; topic: string; message: string; url: string }): RenderedEmail => ({
+    subject: 'We received your message',
+    html: layout(
+      'Thanks for getting in touch',
+      p(`Hi ${escapeHtml(d.name)},`) +
+        p(`We received your message (<strong>${escapeHtml(d.topic)}</strong>) and will reply to this address soon.`) +
+        `<blockquote style="margin:16px 0;padding:12px 16px;border-left:3px solid #e3e6ea;color:#687076;white-space:pre-wrap">${escapeHtml(d.message.slice(0, 2000))}</blockquote>`,
+      { label: 'Visit our website', url: d.url },
+    ),
+    text: `Hi ${d.name},\n\nWe received your message (${d.topic}) and will reply soon.\n\n> ${d.message.slice(0, 2000).replace(/\n/g, '\n> ')}\n`,
+  }),
+
+  /** to platform admins: a new inquiry */
+  inquiryNew: (d: { adminName: string; topic: string; fromName: string; fromEmail: string; company: string | null; message: string; url: string }): RenderedEmail => ({
+    subject: `New inquiry: ${d.topic} from ${d.fromName}`,
+    html: layout(
+      `New ${d.topic.toLowerCase()}`,
+      p(`Hi ${escapeHtml(d.adminName)},`) +
+        p(`<strong>${escapeHtml(d.fromName)}</strong> (${escapeHtml(d.fromEmail)}${d.company ? `, ${escapeHtml(d.company)}` : ''}) wrote through the contact form:`) +
+        `<blockquote style="margin:16px 0;padding:12px 16px;border-left:3px solid #3e63dd;white-space:pre-wrap">${escapeHtml(d.message.slice(0, 3000))}</blockquote>`,
+      { label: 'Open the inquiry', url: d.url },
+    ),
+    text: `${d.fromName} <${d.fromEmail}>${d.company ? ` (${d.company})` : ''} — ${d.topic}\n\n${d.message.slice(0, 3000)}\n\nOpen: ${d.url}\n`,
+  }),
+
+  /** to the visitor: our answer */
+  inquiryReply: (d: { name: string; topic: string; reply: string; original: string; senderName: string; contactUrl: string }): RenderedEmail => ({
+    subject: `Re: your ${d.topic.toLowerCase()}`,
+    html: layout(
+      'Our reply',
+      p(`Hi ${escapeHtml(d.name)},`) +
+        `<div style="margin:0 0 16px;line-height:1.6;white-space:pre-wrap">${escapeHtml(d.reply)}</div>` +
+        p(`— ${escapeHtml(d.senderName)}`) +
+        `<p style="color:#8b8d98;font-size:13px;margin-top:24px">Your message:</p><blockquote style="margin:0 0 16px;padding:12px 16px;border-left:3px solid #e3e6ea;color:#687076;white-space:pre-wrap">${escapeHtml(d.original.slice(0, 2000))}</blockquote>` +
+        p(`To write to us again, use the <a href="${escapeHtml(d.contactUrl)}" style="color:#3e63dd">contact page</a>.`),
+    ),
+    text: `Hi ${d.name},\n\n${d.reply}\n\n— ${d.senderName}\n\nYour message:\n> ${d.original.slice(0, 2000).replace(/\n/g, '\n> ')}\n\nWrite again: ${d.contactUrl}\n`,
+  }),
 };
 
 export type TemplateName = keyof typeof templates;

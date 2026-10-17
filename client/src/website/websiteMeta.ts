@@ -1,5 +1,5 @@
 // Website helpers (pure, unit tested): section catalogue, link rules, small text helpers.
-import type { PlanInfo, SectionType } from './types'
+import type { InquiryStatus, InquiryType, PlanInfo, SectionType } from './types'
 
 export const SECTION_CATALOG: { type: SectionType; label: string; description: string }[] = [
   { type: 'hero', label: 'Hero slider', description: 'Big headline with buttons and an image — one or more slides' },
@@ -12,7 +12,28 @@ export const SECTION_CATALOG: { type: SectionType; label: string; description: s
   { type: 'faq', label: 'FAQ', description: 'Questions and answers that open on click' },
   { type: 'rich_text', label: 'Text', description: 'Free text in markdown' },
   { type: 'cta', label: 'Call to action', description: 'A coloured band with a message and buttons' },
+  { type: 'contact_form', label: 'Contact form', description: 'Visitors write to you — messages arrive in the Inquiries inbox' },
 ]
+
+export const INQUIRY_TYPES: { value: InquiryType; label: string }[] = [
+  { value: 'question', label: 'General question' },
+  { value: 'demo', label: 'Book a demo' },
+  { value: 'sales', label: 'Sales / pricing' },
+  { value: 'support', label: 'Support' },
+]
+export const inquiryTypeLabel = (t: InquiryType) => INQUIRY_TYPES.find((x) => x.value === t)?.label ?? t
+export const TEAM_SIZES = ['1-10', '11-50', '51-200', '201-1000', '1000+']
+export const INQUIRY_STATUS: Record<InquiryStatus, { label: string; color: string }> = {
+  new: { label: 'New', color: 'blue' },
+  replied: { label: 'Replied', color: 'green' },
+  closed: { label: 'Closed', color: 'default' },
+  spam: { label: 'Spam', color: 'red' },
+}
+
+/** ?type=demo on the contact page pre-selects that topic (only one the form offers). */
+export function initialTopic(param: string | null, topics: InquiryType[]): InquiryType {
+  return topics.find((t) => t === param) ?? topics[0] ?? 'question'
+}
 
 export const sectionLabel = (type: SectionType) => SECTION_CATALOG.find((s) => s.type === type)?.label ?? type
 
@@ -52,6 +73,8 @@ export function sectionSummary(type: SectionType, content: Record<string, unknow
       return `${String(content.title ?? 'Pricing')} · ${count('plans')} plan(s)`
     case 'feature_rows':
       return `${count('items')} row(s)`
+    case 'contact_form':
+      return `${String(content.title ?? 'Contact form')} · ${count('topics')} topic(s)`
     default:
       return `${String(content.title ?? '')} · ${count('items')} item(s)`.replace(/^ · /, '')
   }

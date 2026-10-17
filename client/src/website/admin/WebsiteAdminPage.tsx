@@ -7,6 +7,7 @@ import { useSearchParams } from 'react-router-dom'
 import { PageHeader } from '../../components/ui'
 import { useFetch } from '../../hooks/useFetch'
 import { websiteAdminApi } from '../api'
+import { InquiriesInbox } from './InquiriesInbox'
 import { MediaLibrary } from './MediaLibrary'
 import { PageEditor } from './PageEditor'
 import { SettingsEditor } from './SettingsEditor'
@@ -14,11 +15,13 @@ import { SettingsEditor } from './SettingsEditor'
 export default function WebsiteAdminPage() {
   const pages = useFetch(useCallback(() => websiteAdminApi.pages(), []))
   const settings = useFetch(useCallback(() => websiteAdminApi.settings(), []))
+  const inbox = useFetch(useCallback(() => websiteAdminApi.inquiries({ status: 'new', limit: 1 }), []))
   const [params, setParams] = useSearchParams()
   const tab = params.get('tab') ?? 'home'
   const refresh = () => {
     pages.reload()
     settings.reload()
+    inbox.reload()
   }
   const label = (text: string, changed?: boolean) => (changed ? <Badge dot offset={[6, 0]}>{text}</Badge> : text)
 
@@ -41,6 +44,15 @@ export default function WebsiteAdminPage() {
           ...(pages.data ?? []).map((p) => ({ key: p.slug, label: label(p.title, p.hasChanges), children: <PageEditor slug={p.slug} onChanged={refresh} /> })),
           { key: 'settings', label: label('Header & footer', settings.data?.hasChanges), children: <SettingsEditor onChanged={refresh} /> },
           { key: 'media', label: 'Images', children: <MediaLibrary /> },
+          {
+            key: 'inquiries',
+            label: (
+              <Badge count={inbox.data?.counts.new ?? 0} size="small" offset={[10, 0]}>
+                Inquiries
+              </Badge>
+            ),
+            children: <InquiriesInbox onChanged={inbox.reload} />,
+          },
         ]}
       />
     </>

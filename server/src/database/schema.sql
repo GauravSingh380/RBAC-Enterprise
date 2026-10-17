@@ -1018,6 +1018,7 @@ CREATE TABLE IF NOT EXISTS website_pages (
   title            VARCHAR(100) NOT NULL,
   nav_label        VARCHAR(40),
   show_in_nav      BOOLEAN      NOT NULL DEFAULT TRUE,
+  show_in_footer   BOOLEAN      NOT NULL DEFAULT FALSE,   -- small links at the bottom of the footer (Privacy, Terms)
   nav_order        INT          NOT NULL DEFAULT 0,
   seo_title        VARCHAR(70),
   seo_description  VARCHAR(170),
@@ -1031,8 +1032,9 @@ CREATE TABLE IF NOT EXISTS website_pages (
 CREATE TABLE IF NOT EXISTS website_sections (
   id          SERIAL PRIMARY KEY,
   page_id     INT         NOT NULL REFERENCES website_pages(id) ON DELETE CASCADE,
-  type        VARCHAR(30) NOT NULL CHECK (type IN ('hero', 'logos', 'features_grid', 'feature_rows', 'stats',
-                                                   'testimonials', 'cta', 'rich_text', 'pricing', 'faq')),
+  type        VARCHAR(30) NOT NULL CONSTRAINT website_sections_type_check
+                          CHECK (type IN ('hero', 'logos', 'features_grid', 'feature_rows', 'stats',
+                                          'testimonials', 'cta', 'rich_text', 'pricing', 'faq', 'contact_form')),
   position    INT         NOT NULL DEFAULT 0,
   is_visible  BOOLEAN     NOT NULL DEFAULT TRUE,
   content     JSONB       NOT NULL DEFAULT '{}'::jsonb,   -- shape depends on the type (validated by the API)
@@ -1061,6 +1063,34 @@ CREATE TABLE IF NOT EXISTS website_media (
   created_at  TIMESTAMPTZ  NOT NULL DEFAULT NOW()
 );
 
+-- messages sent through the contact form (Platform → Website → Inquiries)
+CREATE TABLE IF NOT EXISTS website_inquiries (
+  id          SERIAL PRIMARY KEY,
+  type        VARCHAR(20)  NOT NULL CHECK (type IN ('question', 'demo', 'sales', 'support')),
+  status      VARCHAR(20)  NOT NULL DEFAULT 'new' CHECK (status IN ('new', 'replied', 'closed', 'spam')),
+  name        VARCHAR(100) NOT NULL,
+  email       VARCHAR(255) NOT NULL,
+  company     VARCHAR(150),
+  team_size   VARCHAR(20),
+  phone       VARCHAR(40),
+  message     TEXT         NOT NULL,
+  notes       TEXT,                                     -- internal, never shown to the sender
+  source_path VARCHAR(200),
+  ip_address  VARCHAR(64),
+  user_agent  VARCHAR(255),
+  replied_at  TIMESTAMPTZ,
+  created_at  TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+  updated_at  TIMESTAMPTZ  NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS website_inquiry_replies (
+  id         SERIAL PRIMARY KEY,
+  inquiry_id INT         NOT NULL REFERENCES website_inquiries(id) ON DELETE CASCADE,
+  body       TEXT        NOT NULL,
+  sent_by    INT REFERENCES users(id) ON DELETE SET NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
 -- =====================================================================
 -- 2. UPGRADE COLUMNS  (v1 single-tenant databases; no-op on fresh installs)
 -- =====================================================================
@@ -1081,6 +1111,18 @@ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'fk_work_items_sprint') THEN
     ALTER TABLE work_items ADD CONSTRAINT fk_work_items_sprint
       FOREIGN KEY (sprint_id, project_id) REFERENCES sprints (id, project_id) ON DELETE SET NULL (sprint_id);
+  END IF;
+END $$;
+
+-- Phase 4b upgrades: footer links per page, the contact form section type
+ALTER TABLE website_pages ADD COLUMN IF NOT EXISTS show_in_footer BOOLEAN NOT NULL DEFAULT FALSE;
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'website_sections_type_check'
+                    AND pg_get_constraintdef(oid) LIKE '%contact_form%') THEN
+    ALTER TABLE website_sections DROP CONSTRAINT IF EXISTS website_sections_type_check;
+    ALTER TABLE website_sections ADD CONSTRAINT website_sections_type_check
+      CHECK (type IN ('hero', 'logos', 'features_grid', 'feature_rows', 'stats', 'testimonials', 'cta', 'rich_text', 'pricing', 'faq', 'contact_form'));
   END IF;
 END $$;
 
@@ -1306,6 +1348,8 @@ CREATE INDEX IF NOT EXISTS idx_page_versions_page      ON project_page_versions 
 
 -- public website
 CREATE INDEX IF NOT EXISTS idx_website_sections_page   ON website_sections (page_id, position);
+CREATE INDEX IF NOT EXISTS idx_website_inquiries_status ON website_inquiries (status, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_website_inquiry_replies  ON website_inquiry_replies (inquiry_id, created_at);
 
 -- help center
 CREATE INDEX IF NOT EXISTS idx_guide_articles_section ON guide_articles (section_id, position);
@@ -2209,7 +2253,7 @@ SELECT p.id, v.type, v.position, v.visible, v.content::jsonb
       { "planKey": "enterprise", "priceLabel": "Custom", "period": null, "description": "For organizations with advanced needs.",
         "highlight": false, "badge": null,
         "features": ["Everything in Pro", "No limits", "Password and session rules", "Priority support"],
-        "cta": { "label": "Get started", "href": "/register" } }
+        "cta": { "label": "Contact sales", "href": "/contact?type=sales" } }
     ],
     "footnote": "Members and guests include pending invitations. Archived projects don't count towards the limit."
   }$json$),
@@ -2232,16 +2276,115 @@ SELECT p.id, v.type, v.position, v.visible, v.content::jsonb
   ) AS v(slug, type, position, visible, content) ON v.slug = p.slug
  WHERE NOT EXISTS (SELECT 1 FROM website_sections s WHERE s.page_id = p.id);
 
+
+-- 4.3f Public website — Contact, FAQ, Privacy, Terms ----------------------------
+-- Contact and FAQ go live at once; Privacy and Terms start as UNPUBLISHED drafts (templates to review first).
+INSERT INTO website_pages (slug, path, title, nav_label, show_in_nav, show_in_footer, nav_order, seo_title, seo_description) VALUES
+  ('faq',     '/faq',     'FAQ',              'FAQ',     TRUE,  FALSE, 25, 'FAQ — Team-Flex', 'Answers to common questions about Team-Flex: getting started, features, plans, security and data.'),
+  ('contact', '/contact', 'Contact',          'Contact', TRUE,  FALSE, 30, 'Contact us — Team-Flex', 'Questions, a demo, pricing or support — send us a message and we will get back to you.'),
+  ('privacy', '/privacy', 'Privacy policy',   'Privacy', FALSE, TRUE,  90, 'Privacy policy — Team-Flex', 'How Team-Flex collects, uses and protects personal data.'),
+  ('terms',   '/terms',   'Terms of service', 'Terms',   FALSE, TRUE,  91, 'Terms of service — Team-Flex', 'The terms that apply when you use Team-Flex.')
+ON CONFLICT (slug) DO NOTHING;
+
+INSERT INTO website_sections (page_id, type, position, is_visible, content)
+SELECT p.id, v.type, v.position, TRUE, v.content::jsonb
+  FROM website_pages p
+  JOIN (VALUES
+  -- ---------------------------------------------------------------- contact
+  ('contact', 'contact_form', 1, $json${
+    "title": "Talk to us",
+    "subtitle": "Questions, a demo, pricing or help — send a message and we'll get back to you, usually within one working day.",
+    "topics": ["question", "demo", "sales", "support"],
+    "showCompany": true,
+    "showTeamSize": true,
+    "showPhone": false,
+    "successTitle": "Thanks — your message is on its way",
+    "successText": "We've sent a copy to your email address and will reply soon.",
+    "contactPoints": [
+      { "icon": "mail", "label": "Email", "value": "Replace with your support address", "href": null },
+      { "icon": "clock", "label": "Hours", "value": "Monday to Friday, 9:00–18:00", "href": null },
+      { "icon": "question", "label": "Help Center", "value": "Already a customer? Find answers inside the app.", "href": "/login" }
+    ]
+  }$json$),
+  ('contact', 'faq', 2, $json${
+    "title": "Before you write",
+    "items": [
+      { "question": "How fast do you reply?", "answer": "Usually within one working day." },
+      { "question": "Can I see a demo first?", "answer": "Yes — choose **Book a demo** in the form and tell us a little about your team." },
+      { "question": "I already have an account and need help", "answer": "Choose **Support**, or open the **Help Center** inside Team-Flex — there is a **?** next to every page title." }
+    ]
+  }$json$),
+  -- ---------------------------------------------------------------- faq
+  ('faq', 'rich_text', 1, $json${
+    "title": "Frequently asked questions",
+    "body": "Everything people usually ask before they start. Can't find your answer? [Contact us](/contact).",
+    "align": "center"
+  }$json$),
+  ('faq', 'faq', 2, $json${
+    "title": "Getting started",
+    "items": [
+      { "question": "What is Team-Flex?", "answer": "One place for your team's **work**, **quality** and **people**: boards and sprints, bug tracking with QA, test runs, production errors, leave and holidays, docs, calendar and insights." },
+      { "question": "How do I start?", "answer": "[Create an organization](/register), invite your team and create your first project. A checklist inside the app guides you through the first steps." },
+      { "question": "Can I bring my clients in?", "answer": "Yes. Invite them as **guests**: they see only the project you invite them to — nothing else in your organization." },
+      { "question": "Does it work on my phone?", "answer": "Yes, Team-Flex works in any modern browser, on desktop and mobile." }
+    ]
+  }$json$),
+  ('faq', 'faq', 3, $json${
+    "title": "Features",
+    "items": [
+      { "question": "Do you support Scrum and Kanban?", "answer": "Both — plus a bug-tracking template with a QA verification flow, or your own workflow." },
+      { "question": "How does QA verification work?", "answer": "A developer moves a fixed bug to *Ready for QA*; QA passes it (*Verified*) or sends it back (*Reopened*) with a reason." },
+      { "question": "Can I restore something I deleted?", "answer": "Yes. Deleted items, docs and projects stay in the **Trash** for 30 days." },
+      { "question": "Is there a calendar?", "answer": "Every project has a calendar of due dates, sprints and who is away — and everyone has one in **My Work**." }
+    ]
+  }$json$),
+  ('faq', 'faq', 4, $json${
+    "title": "Plans and billing",
+    "items": [
+      { "question": "Is there a free plan?", "answer": "Yes, with the limits shown on the [pricing page](/pricing)." },
+      { "question": "What happens when we reach a limit?", "answer": "Nothing stops working — you just can't add more members, guests or projects until you free a place or upgrade." },
+      { "question": "Can we change plans later?", "answer": "Yes, at any time. Your data stays where it is." }
+    ]
+  }$json$),
+  ('faq', 'faq', 5, $json${
+    "title": "Security and data",
+    "items": [
+      { "question": "Is our data separated from other companies?", "answer": "Yes. Every organization's data is kept apart, and private projects are visible only to their members." },
+      { "question": "Can we set password rules?", "answer": "Yes: a minimum length, a required symbol, sign-out after inactivity and a maximum session length." },
+      { "question": "Who did what?", "answer": "The audit log records sign-ins, role and member changes and other important actions." }
+    ]
+  }$json$),
+  ('faq', 'cta', 6, $json${
+    "title": "Still have a question?",
+    "text": "We're happy to help.",
+    "primaryCta": { "label": "Contact us", "href": "/contact" },
+    "secondaryCta": { "label": "Start free", "href": "/register" }
+  }$json$),
+  -- ---------------------------------------------------------------- privacy (template — review before publishing)
+  ('privacy', 'rich_text', 1, $json${
+    "title": "Privacy policy",
+    "align": "left",
+    "body": "_Last updated: [date]_\n\n> **Template.** Replace everything in [brackets] and have this text reviewed by a legal adviser before you publish it.\n\nThis policy explains how **[Company name]** (\"we\") collects and uses personal data when you visit our website or use Team-Flex.\n\n## Who we are\n[Company name], [address]. Contact: [privacy email address].\n\n## What we collect\n- **Account data:** name, email address, password (stored only as a one-way hash).\n- **Content you create:** projects, work items, comments, files, docs and leave requests.\n- **Usage data:** sign-in times, IP address and browser type, used for security and the audit log.\n- **Messages you send us** through the contact form.\n\n## Why we use it\n- To provide the service and keep it secure.\n- To answer your messages.\n- To send account emails (invitations, password resets, notifications you choose).\n\n## Who we share it with\nWe do not sell personal data. We use these processors: [hosting provider], [email provider]. Inside an organization, members see what their roles and projects allow.\n\n## How long we keep it\nAs long as your account exists. Deleted items stay in the trash for 30 days, then they are removed. [Backups are kept for N days.]\n\n## Your rights\nYou can access, correct or delete your data, and ask for a copy. Write to [privacy email address].\n\n## Cookies\nWe use only what is needed to keep you signed in and remember your preferences (such as dark mode).\n\n## Changes\nWe will update this page and the date above when this policy changes."
+  }$json$),
+  -- ---------------------------------------------------------------- terms (template — review before publishing)
+  ('terms', 'rich_text', 1, $json${
+    "title": "Terms of service",
+    "align": "left",
+    "body": "_Last updated: [date]_\n\n> **Template.** Replace everything in [brackets] and have this text reviewed by a legal adviser before you publish it.\n\nThese terms apply when you use Team-Flex, provided by **[Company name]**, [address].\n\n## Your account\nYou are responsible for your account and for keeping your password safe. The owner of an organization decides who can join it and what they can do.\n\n## Acceptable use\nDo not use the service to break the law, to send spam or malware, or to try to access data you are not allowed to see.\n\n## Your content\nYou keep all rights to the content you put into Team-Flex. You allow us to store and process it only to provide the service.\n\n## Plans and payment\nPlans, prices and limits are shown on the [pricing page](/pricing). [Payment terms, renewal and refunds.]\n\n## Availability\nWe work to keep the service available but cannot promise it will never be interrupted. [Service level, if any.]\n\n## Ending\nYou can stop using the service at any time. We may suspend accounts that break these terms.\n\n## Liability\n[Limitation of liability — have this reviewed by a legal adviser.]\n\n## Changes\nWe may update these terms. We will change the date above and tell organization owners about important changes.\n\n## Contact\n[Contact email address]"
+  }$json$)
+  ) AS v(slug, type, position, content) ON v.slug = p.slug
+ WHERE NOT EXISTS (SELECT 1 FROM website_sections s WHERE s.page_id = p.id);
+
 -- first publish: the starting content is live until the platform owner publishes changes
 UPDATE website_pages p
    SET published = jsonb_build_object(
-         'title', p.title, 'navLabel', p.nav_label, 'showInNav', p.show_in_nav, 'navOrder', p.nav_order,
+         'title', p.title, 'navLabel', p.nav_label, 'showInNav', p.show_in_nav, 'showInFooter', p.show_in_footer, 'navOrder', p.nav_order,
          'seoTitle', p.seo_title, 'seoDescription', p.seo_description,
          'sections', COALESCE((SELECT jsonb_agg(jsonb_build_object('id', s.id, 'type', s.type, 'isVisible', s.is_visible, 'content', s.content)
                                        ORDER BY s.position, s.id)
                                  FROM website_sections s WHERE s.page_id = p.id), '[]'::jsonb)),
        published_at = NOW(), draft_updated_at = NOW()
- WHERE p.published IS NULL;
+ WHERE p.published IS NULL AND p.slug NOT IN ('privacy', 'terms'); -- legal templates: the platform owner reviews and publishes them
 
 INSERT INTO website_settings (id, draft, published, published_at)
 SELECT 1, c.content::jsonb, c.content::jsonb, NOW()
@@ -2253,7 +2396,8 @@ SELECT 1, c.content::jsonb, c.content::jsonb, NOW()
     "footer": {
       "text": "Team-Flex is one place for your team's work, quality and people.",
       "columns": [
-        { "title": "Product", "links": [ { "label": "Features", "href": "/features" }, { "label": "Pricing", "href": "/pricing" } ] },
+        { "title": "Product", "links": [ { "label": "Features", "href": "/features" }, { "label": "Pricing", "href": "/pricing" }, { "label": "FAQ", "href": "/faq" } ] },
+        { "title": "Company", "links": [ { "label": "Contact us", "href": "/contact" }, { "label": "Book a demo", "href": "/contact?type=demo" } ] },
         { "title": "Get started", "links": [ { "label": "Create an account", "href": "/register" }, { "label": "Log in", "href": "/login" } ] }
       ],
       "copyright": "© {year} Team-Flex. All rights reserved."

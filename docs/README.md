@@ -22,9 +22,10 @@ automated tests and an Ant Design UI.
 > - **Phase 3e — security, plans & guests** ✅ password & session rules per organization (minimum length, symbol, sign-out after inactivity, maximum session length, "ask everyone for a new password"), **plans** with member / guest / project limits enforced on the server (Platform → Plans), **guest access** for outside collaborators who see only the projects they are invited to — with Help Center articles for each
 > - **Phase 3f — everyday work** ✅ **checklists** in items (progress on cards), **templates** per project (+ **repeating** every weekday / week / month), **trash** for items, docs and projects (restore within 30 days), project **docs** (wiki pages with history and search), **calendar** of due dates, sprints and absences (drag to reschedule) — also in My Work
 > - **Phase 4a — public website** ✅ **Home**, **Features** and **Pricing** pages built from sections (hero slider, feature grid, image + text rows, numbers, logos, testimonials, pricing from Plans, FAQ, text, call to action), header & footer, image library — all edited by the platform owner in **Platform → Website** with draft → preview → publish. Own module: `server/src/modules/website`, `client/src/website`
+> - **Phase 4b — Contact, FAQ, legal** ✅ **Contact** page with a contact-form section → **Inquiries inbox** (status, internal notes, replies by e-mail, spam), automatic e-mails to the sender and the platform admins, bot protection without external services; **FAQ** page; **Privacy** and **Terms** templates (unpublished until reviewed) shown in the footer links once published
 > - Next: releases & roadmap · time tracking · integrations (see [roadmap](#18-roadmap))
 >
-> 📘 **New to the code?** Read the learning guides — **[PHASE-2.md](PHASE-2.md)** (2a–2c) and **[PHASE-2D-2E.md](PHASE-2D-2E.md)** (boards, realtime, sprints, reports) , **[PHASE-2F.md](PHASE-2F.md)** (bug flow, test management, production errors), **[PHASE-2G.md](PHASE-2G.md)** (dashboards, reports, leave & holidays) , **[PHASE-2H-3A.md](PHASE-2H-3A.md)** (notifications, capacity planning) , **[PHASE-3B.md](PHASE-3B.md)** (organization insights) , **[PHASE-3C.md](PHASE-3C.md)** (teams, managers, My Work) , **[PHASE-3D.md](PHASE-3D.md)** (Help Center) , **[PHASE-3E.md](PHASE-3E.md)** (security rules, plans, guests) , **[PHASE-3F.md](PHASE-3F.md)** (checklists, templates, trash, docs, calendar) and **[PHASE-4A.md](PHASE-4A.md)** (public website): how it works inside, why, and where to look.
+> 📘 **New to the code?** Read the learning guides — **[PHASE-2.md](PHASE-2.md)** (2a–2c) and **[PHASE-2D-2E.md](PHASE-2D-2E.md)** (boards, realtime, sprints, reports) , **[PHASE-2F.md](PHASE-2F.md)** (bug flow, test management, production errors), **[PHASE-2G.md](PHASE-2G.md)** (dashboards, reports, leave & holidays) , **[PHASE-2H-3A.md](PHASE-2H-3A.md)** (notifications, capacity planning) , **[PHASE-3B.md](PHASE-3B.md)** (organization insights) , **[PHASE-3C.md](PHASE-3C.md)** (teams, managers, My Work) , **[PHASE-3D.md](PHASE-3D.md)** (Help Center) , **[PHASE-3E.md](PHASE-3E.md)** (security rules, plans, guests) , **[PHASE-3F.md](PHASE-3F.md)** (checklists, templates, trash, docs, calendar) , **[PHASE-4A.md](PHASE-4A.md)** (public website) and **[PHASE-4B.md](PHASE-4B.md)** (contact form, inquiries, FAQ, legal pages): how it works inside, why, and where to look.
 
 ---
 
@@ -497,6 +498,17 @@ Charts follow the validated palette: two series blue / orange; severity is **ord
 | **Weekly report** | job `insights.weekly-report` every **Monday 08:00** (`job_schedules`): last week's numbers, projects needing attention, most loaded people, who is away, pending approvals — to everyone with `insights.view` who keeps the "Weekly organization report" setting on; "Email me the weekly report" sends a preview now |
 | Period | 7 / 30 / 90 days |
 
+### Contact, inquiries, FAQ & legal pages (4b)
+
+| | |
+|---|---|
+| **Pages** | `/contact` (contact form + "before you write" FAQ) · `/faq` (four groups of questions + CTA) — live and in the menu · `/privacy`, `/terms` — **templates with [placeholders], not published** until the platform owner reviews and publishes them |
+| **Contact form section** (`contact_form`) | topics (question, demo, sales, support — choose which, first = default; `/contact?type=demo` pre-selects), optional company / team size / phone, thank-you message, contact details next to the form (icon, label, text, link); inside the editor's preview it sends nothing |
+| **On submit** (`POST /api/website/inquiries`, no login) | stored in `website_inquiries` · "we received your message" e-mail to the sender · "new inquiry" e-mail to every platform admin with a link straight to it |
+| **Bots** | hidden "website" field + time to fill in (< 2.5 s) → stored as **spam**, nobody e-mailed, the bot still sees "thank you" · 5 messages per IP per 15 minutes |
+| **Inquiries inbox** (Website → Inquiries, badge = new) | filter Open / New / Replied / Closed / Spam / All, topic, search · a message: details, **reply by e-mail** (original quoted, kept in a timeline, optionally close), status, **internal notes**, delete |
+| **Footer links** | each page has "In the footer links"; the published ones (Privacy, Terms) appear at the bottom of every page |
+
 ### Public website (4a)
 
 | | |
@@ -584,7 +596,7 @@ Charts follow the validated palette: two series blue / orange; severity is **ord
 `npm run db:init` = create DB if missing → `schema.sql` → pending migrations.
 Examples: `0006_security_plans_guests.sql` gave every existing organization the Guest role, granted `people.view` to the system roles and put the People menu behind it; `0005_help_center.sql` granted `guide.view` to the system roles (Admin, QA, Developer, Member) of existing organizations; `0004_organization_insights.sql` granted `insights.view` to existing Admin roles; `0003_leave_management.sql` granted the `leave.*` permissions and gave every existing organization the default leave types and calendar; `0002_qa_and_error_tracking.sql` granted `errors.*` to existing Admin / QA / Developer roles and set the QA flow on existing Bug tracking projects; `0001_grant_project_permissions.sql` gave `projects.create` / `projects.manage_all` to the Admin role of every existing organization (templates only affect new organizations).
 
-### Tables (65)
+### Tables (67)
 
 | Area | Tables |
 |---|---|
@@ -599,7 +611,7 @@ Examples: `0006_security_plans_guests.sql` gave every existing organization the 
 | Notifications & capacity | `notifications`, `notification_preferences`, `sprint_capacity` |
 | People | `teams`, `team_members` (+ `organization_members.job_title`, `manager_id`) |
 | Help Center | `guide_sections`, `guide_articles` (generated `search_vector` + GIN index), `guide_article_organizations` (+ `organizations.getting_started_dismissed_at`) |
-| Public website | `website_pages` (+ `published` snapshot), `website_sections`, `website_settings` (draft / published), `website_media` |
+| Public website | `website_pages` (+ `published` snapshot, `show_in_footer`), `website_sections`, `website_settings` (draft / published), `website_media`, `website_inquiries`, `website_inquiry_replies` |
 | Checklists, templates, docs | `work_item_checklist_items`, `work_item_templates`, `project_pages` (generated `search_vector`), `project_page_versions` (+ `deleted_at` / `deleted_by` on `work_items`, `projects`, `project_pages`) |
 | Plans & security | `plans` (+ `organizations.password_min_length`, `password_require_symbol`, `session_idle_minutes`, `session_max_hours`; `users.password_change_required`; `refresh_tokens.session_started_at`; `organization_members.is_guest`; `invitations.project_id`, `project_role`) |
 | Work items | `work_items`, `work_item_labels`, `work_item_links`, `work_item_comments`, `comment_mentions`, `comment_reactions`, `work_item_watchers`, `work_item_attachments`, `work_item_events` |
@@ -793,7 +805,10 @@ List endpoints accept `?page=&limit=&search=` and return `{ items, total, page, 
 | GET | `/platform/stats` | Totals |
 | GET · PATCH | `/platform/organizations[/:id]` · `/platform/users[/:id]` | Suspend / plan · disable / platform admin |
 | GET · POST · PATCH · DELETE | `/platform/menus[/:id]` | Sidebar |
-| GET | `/website/site` · `/website/pages/:slug` · `/website/media/:id` | **public**: header / footer / menu · a published page (pricing with live plans) · an image |
+| GET | `/website/site` · `/website/pages/:slug` · `/website/media/:id` | **public**: header / footer / menu / `footerLinks` · a published page (pricing with live plans) · an image |
+| POST | `/website/inquiries` | **public** contact form `{ type, name, email, company?, teamSize?, phone?, message, website (honeypot), elapsedMs }` — rate limited |
+| GET · PATCH · DELETE | `/platform/website/inquiries[/:id]` (`?status=open\|new\|replied\|closed\|spam\|all&type&search&page`) | inbox + counts · one with its replies · `{ status?, notes? }` |
+| POST | `/platform/website/inquiries/:id/reply` | `{ body, close? }` — e-mailed to the sender, kept with the inquiry |
 | GET · PATCH | `/platform/website/pages[/:slug]` | pages (with "unpublished changes") · a draft with `previewSections` and `plans` · page settings |
 | POST · PUT | `/platform/website/pages/:slug/sections` · `/sections/order` · `/publish` · `/discard` | add `{ type, afterId? }` · reorder `{ ids }` · publish · discard |
 | PATCH · POST · DELETE | `/platform/website/sections/:id` · `/:id/duplicate` | `{ content?, isVisible? }` (content validated per type) |
@@ -839,8 +854,8 @@ List endpoints accept `?page=&limit=&search=` and return `{ items, total, page, 
 | `/projects/:key/calendar` | project access | **Calendar**: month grid of due dates, sprints, away people and holidays; drag to change the due date |
 | `/projects/:key/trash` | project member (edit) | **Trash**: deleted items and pages, restore / delete for good |
 | `/org/*` | org permissions | Members, roles, announcement, audit log, settings |
-| `/`, `/features`, `/pricing` | anyone | **Public website** (`client/src/website`) |
-| `/platform/website` | platform admin | **Website** editor: a tab per page, Header & footer, Images |
+| `/`, `/features`, `/pricing`, `/faq`, `/contact`, `/privacy`, `/terms` | anyone | **Public website** (`client/src/website`) — legal pages once published |
+| `/platform/website` | platform admin | **Website** editor: a tab per page, Header & footer, Images, **Inquiries** (`?tab=inquiries&inquiry=12` opens one) |
 | `/platform/*` | platform admin | Overview, organizations, users, menus, **Website**, **Plans**, **Help content**, audit, **Mailbox**, **Background jobs**, **All errors** |
 
 ### Building blocks
@@ -912,10 +927,12 @@ List endpoints accept `?page=&limit=&search=` and return `{ items, total, page, 
 
 | `api/website` | public pages and header / footer without login, hidden sections not sent, pricing with live plan limits, platform-only editing, draft vs published, discard, add / duplicate / hide / reorder (all ids) / delete, unsafe links / empty sliders / unknown images / unknown types refused, page SEO + menu published with the page, image upload (bytes checked), public serving, delete refused while used |
 
-**215 tests, all passing.** (Test organizations start on the unlimited plan — `tests/helpers.ts` — so only the plan tests see limits.)
+| `api/website-inquiries` | Contact / FAQ live and in the menu, legal pages 404 until published then in the footer links, footer flag published with the page, contact section validated · form stored + e-mails to sender and platform admins, validation, honeypot and too-fast → spam without e-mails · inbox admin-only, filters and counts, notes, reply e-mailed and kept, close, unknown status refused, delete |
+
+**223 tests, all passing.** (Test organizations start on the unlimited plan — `tests/helpers.ts` — so only the plan tests see limits.)
 
 ### Client — `cd client; npm test`
-Vitest unit tests for pure logic (`src/__tests__`): API error mapping, work-item rules, board move / neighbour rules, realtime event filter, QA flow / test outcome / browser detection, leave calendar helpers, availability / due-date helpers, My Work grouping, Help Center snippet / app-path helpers, plan usage rows and security form helpers, month grid / docs tree / repeat labels , website link rules / plan limit lines / section summaries / form cleaning (41 tests).
+Vitest unit tests for pure logic (`src/__tests__`): API error mapping, work-item rules, board move / neighbour rules, realtime event filter, QA flow / test outcome / browser detection, leave calendar helpers, availability / due-date helpers, My Work grouping, Help Center snippet / app-path helpers, plan usage rows and security form helpers, month grid / docs tree / repeat labels , website link rules / plan limit lines / section summaries / form cleaning, contact topic from `?type=` (42 tests).
 
 ---
 
@@ -967,7 +984,7 @@ Example: **Sprints** (phase 2e) — built exactly this way, see `server/src/modu
 ~~**2h — Notifications**~~ ✅ · ~~**3a — Capacity planning**~~ ✅ — later ideas: per-user time zones for digests, Slack / Teams delivery, web push, capacity in hours, capacity snapshot at sprint start.
 ~~**3b — Organization insights**~~ ✅ — later ideas: trends of the insight numbers over months, per-team breakdowns (after Teams), scheduled CSV exports.
 ~~**3c — Teams, managers, directory, My Work**~~ ✅ — later ideas: team filter on boards / reports, profile photos, skills, time zones.
-~~**4a — Public website: Home, Features, Pricing**~~ ✅ — next pages: Contact (with an Inquiries inbox), FAQ, About, Privacy / Terms; later: pre-rendering for search engines, a blog, a changelog.
+~~**4a — Public website: Home, Features, Pricing**~~ ✅ · ~~**4b — Contact + Inquiries, FAQ, Privacy / Terms**~~ ✅ — next: About; later: inquiry → demo organization in one click, pre-rendering for search engines, a blog, a changelog.
 ~~**3f — Checklists, templates, trash, docs, calendar**~~ ✅ — later ideas: checklist step → sub-task, template variables beyond {date}, links from docs to items (`WEB-12` auto-links), page comments, real-time co-editing, calendar export (iCal), week view.
 ~~**3e — Security rules, plans, guests**~~ ✅ — later ideas: two-factor sign-in (authenticator app), password expiry / history, allowed email domains for invitations, per-organization limit overrides, storage limits, guest expiry dates.
 ~~**3d — Help Center**~~ ✅ — later ideas: "Was this helpful?" feedback, screenshots in articles (uploads), extra articles written by an organization owner for their own people, article versions, translations.
@@ -1009,3 +1026,4 @@ Example: **Sprints** (phase 2e) — built exactly this way, see `server/src/modu
 | 21 | **3e** Security rules per organization (password length / symbol, inactivity sign-out, maximum session, forced new password), plans with member / guest / project limits (Platform → Plans), guest access (one-project outside collaborators), `people.view`, 4 Help Center articles |
 | 22 | **3f** Checklists in items, templates + repeating work, trash (items, docs, projects; 30 days), project docs with history and search, calendar (project + My Work) with drag-to-reschedule, 4 Help Center articles |
 | 23 | **4a** Public website (separate module): Home, Features, Pricing from sections (hero slider, features, image rows, numbers, logos, testimonials, pricing from Plans, FAQ, text, CTA), header & footer, image library, draft → preview → publish in Platform → Website (replaces Platform → Home Page) |
+| 24 | **4b** Contact page with contact-form section and Inquiries inbox (notes, e-mail replies, spam protection), FAQ page, Privacy / Terms templates (published by the owner), footer links per page |

@@ -1,17 +1,22 @@
 // Public website
-//   /api/website (anyone, no login)          GET /site · GET /pages/:slug · GET /media/:id
+//   /api/website (anyone, no login)          GET /site · GET /pages/:slug · GET /media/:id · POST /inquiries (contact form)
 //   /api/platform/website (platform admins)  pages, sections, publish / discard, header & footer, media library
 import { Router } from 'express';
 import multer from 'multer';
 import { z } from 'zod';
+import { createRateLimiter } from '../../common/middleware/rate-limit.middleware.js';
 import { validateBody } from '../../common/middleware/validate.middleware.js';
 import { parseId } from '../../common/utils/parse-id.js';
 import { getContext } from '../../common/utils/request-context.js';
 import {
   addSectionSchema, MAX_IMAGE_MB, mediaUpdateSchema, orderSchema, pageMetaSchema, updateSectionSchema, WebsiteService,
 } from './website.service.js';
+import { InquiriesService, inquirySchema, listInquiriesQuery, replySchema, updateInquirySchema } from './website.inquiries.js';
 
 const website = new WebsiteService();
+const inquiries = new InquiriesService();
+// the contact form: a handful of messages per visitor per 15 minutes
+const contactLimiter = createRateLimiter(15, 5, 'Too many messages — please try again in a few minutes');
 const slug = (v: unknown) => z.string().regex(/^[a-z0-9-]{1,60}$/, 'Invalid page').parse(v);
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: MAX_IMAGE_MB * 1024 * 1024, files: 1 } });
 
@@ -35,6 +40,11 @@ publicWebsiteRouter.get('/media/:id', async (req, res) => {
   res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
   res.setHeader('Content-Security-Policy', "default-src 'none'");
   file.stream.pipe(res);
+});
+
+publicWebsiteRouter.post('/inquiries', contactLimiter, validateBody(inquirySchema), async (req, res) => {
+  await inquiries.submit(req.body, getContext(req));
+  res.status(201).json({ success: true });
 });
 
 // ---------------------------------------------------------------- platform (mounted in platform.routes.ts after requirePlatformAdmin)
@@ -79,6 +89,24 @@ platformWebsiteRouter.put('/settings', async (req, res) => {
 });
 platformWebsiteRouter.post('/settings/publish', async (req, res) => {
   res.json({ success: true, data: await website.publishSettings(getContext(req)) });
+});
+
+// contact form inbox
+platformWebsiteRouter.get('/inquiries', async (req, res) => {
+  res.json({ success: true, data: await inquiries.list(listInquiriesQuery.parse(req.query)) });
+});
+platformWebsiteRouter.get('/inquiries/:id', async (req, res) => {
+  res.json({ success: true, data: await inquiries.get(parseId(req.params.id)) });
+});
+platformWebsiteRouter.patch('/inquiries/:id', validateBody(updateInquirySchema), async (req, res) => {
+  res.json({ success: true, data: await inquiries.update(parseId(req.params.id), req.body, getContext(req)) });
+});
+platformWebsiteRouter.post('/inquiries/:id/reply', validateBody(replySchema), async (req, res) => {
+  res.json({ success: true, data: await inquiries.reply(parseId(req.params.id), req.body, getContext(req)) });
+});
+platformWebsiteRouter.delete('/inquiries/:id', async (req, res) => {
+  await inquiries.remove(parseId(req.params.id), getContext(req));
+  res.json({ success: true });
 });
 
 platformWebsiteRouter.get('/media', async (_req, res) => {

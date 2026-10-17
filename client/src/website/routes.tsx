@@ -18,6 +18,10 @@ export const websiteRoutes: RouteObject = {
     { path: '/', element: <WebsitePage slug="home" /> },
     { path: '/features', element: <WebsitePage slug="features" /> },
     { path: '/pricing', element: <WebsitePage slug="pricing" /> },
+    { path: '/faq', element: <WebsitePage slug="faq" /> },
+    { path: '/contact', element: <WebsitePage slug="contact" /> },
+    { path: '/privacy', element: <WebsitePage slug="privacy" /> },
+    { path: '/terms', element: <WebsitePage slug="terms" /> },
   ],
 }
 

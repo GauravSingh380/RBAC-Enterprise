@@ -143,11 +143,19 @@ export function SiteChrome({ site, children, preview }: { site: SiteData; childr
               </div>
             ))}
           </div>
-          {s.footer.copyright && (
-            <Typography.Text type="secondary" style={{ display: 'block', marginTop: 32, fontSize: '0.9em' }}>
-              {fillYear(s.footer.copyright)}
-            </Typography.Text>
-          )}
+          <Flex justify="space-between" gap={12} wrap style={{ marginTop: 32 }}>
+            {s.footer.copyright ? (
+              <Typography.Text type="secondary" style={{ fontSize: '0.9em' }}>{fillYear(s.footer.copyright)}</Typography.Text>
+            ) : (
+              <span />
+            )}
+            {/* published pages with "in the footer" (Privacy, Terms, …) */}
+            {!!site.footerLinks?.length && (
+              <Flex gap={16} wrap style={{ fontSize: '0.9em' }}>
+                {site.footerLinks.map((l) => <span key={l.path}>{link(l.path, l.label)}</span>)}
+              </Flex>
+            )}
+          </Flex>
         </div>
       </footer>
     </Layout>

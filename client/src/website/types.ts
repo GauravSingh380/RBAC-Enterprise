@@ -1,6 +1,9 @@
 // Public website — the shapes the API sends (server/src/modules/website). Kept apart from the app's types.
 
-export type SectionType = 'hero' | 'logos' | 'features_grid' | 'feature_rows' | 'stats' | 'testimonials' | 'cta' | 'rich_text' | 'pricing' | 'faq'
+export type SectionType = 'hero' | 'logos' | 'features_grid' | 'feature_rows' | 'stats' | 'testimonials' | 'cta' | 'rich_text' | 'pricing' | 'faq' | 'contact_form'
+
+export type InquiryType = 'question' | 'demo' | 'sales' | 'support'
+export type InquiryStatus = 'new' | 'replied' | 'closed' | 'spam'
 
 export interface Cta {
   label: string
@@ -80,6 +83,18 @@ export interface FaqContent {
   items: { question: string; answer: string }[]
 }
 
+export interface ContactFormContent {
+  title?: string | null
+  subtitle?: string | null
+  topics: InquiryType[]
+  showCompany: boolean
+  showTeamSize: boolean
+  showPhone: boolean
+  successTitle: string
+  successText?: string | null
+  contactPoints: { icon?: string | null; label: string; value: string; href?: string | null }[]
+}
+
 export interface Section<T = Record<string, unknown>> {
   id: number
   type: SectionType
@@ -98,6 +113,8 @@ export interface SiteSettings {
 export interface SiteData {
   settings: SiteSettings | null
   nav: { path: string; label: string }[]
+  /** small links at the bottom of the footer (published pages with "in the footer") */
+  footerLinks?: { path: string; label: string }[]
 }
 
 export interface PublicPage {
@@ -116,6 +133,7 @@ export interface PageSummary {
   title: string
   navLabel: string | null
   showInNav: boolean
+  showInFooter: boolean
   navOrder: number
   publishedAt: string | null
   publishedBy: string | null
@@ -147,4 +165,49 @@ export interface MediaItem {
   altText: string | null
   createdAt: string
   uploadedBy: string | null
+}
+
+// ---- contact form inbox
+export interface InquiryInput {
+  type: InquiryType
+  name: string
+  email: string
+  company?: string
+  teamSize?: string | null
+  phone?: string
+  message: string
+  sourcePath?: string
+  /** hidden field: must stay empty (bots fill it) */
+  website?: string
+  elapsedMs?: number
+}
+
+export interface Inquiry {
+  id: number
+  type: InquiryType
+  status: InquiryStatus
+  name: string
+  email: string
+  company: string | null
+  teamSize: string | null
+  phone: string | null
+  message: string
+  notes: string | null
+  sourcePath: string | null
+  repliedAt: string | null
+  createdAt: string
+  updatedAt: string
+  replyCount: number
+}
+
+export interface InquiryDetail extends Inquiry {
+  replies: { id: number; body: string; createdAt: string; sentBy: { id: number; name: string } | null }[]
+}
+
+export interface InquiryList {
+  items: Inquiry[]
+  total: number
+  page: number
+  limit: number
+  counts: Record<InquiryStatus, number>
 }

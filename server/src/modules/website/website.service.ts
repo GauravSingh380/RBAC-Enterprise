@@ -19,6 +19,7 @@ export const pageMetaSchema = z
     title: z.string().trim().min(1).max(100),
     navLabel: z.string().trim().max(40).nullable(),
     showInNav: z.boolean(),
+    showInFooter: z.boolean(),
     navOrder: z.number().int().min(0).max(1000),
     seoTitle: z.string().trim().max(70).nullable(),
     seoDescription: z.string().trim().max(170).nullable(),
@@ -45,7 +46,7 @@ export interface PlanInfo {
   limits: { members: number | null; guests: number | null; projects: number | null };
 }
 
-const META = `p.slug, p.path, p.title, p.nav_label AS "navLabel", p.show_in_nav AS "showInNav", p.nav_order AS "navOrder",
+const META = `p.slug, p.path, p.title, p.nav_label AS "navLabel", p.show_in_nav AS "showInNav", p.show_in_footer AS "showInFooter", p.nav_order AS "navOrder",
               p.seo_title AS "seoTitle", p.seo_description AS "seoDescription"`;
 
 async function plans(): Promise<PlanInfo[]> {
@@ -84,7 +85,7 @@ export class WebsiteService {
 
   /** Header, footer and the navigation (published). */
   async site() {
-    const [settings, nav] = await Promise.all([
+    const [settings, nav, footer] = await Promise.all([
       db.query<{ published: WebsiteSettings | null }>('SELECT published FROM website_settings WHERE id = 1'),
       db.query<{ path: string; label: string }>(
         `SELECT p.path, COALESCE(p.published->>'navLabel', p.published->>'title') AS label
@@ -92,8 +93,14 @@ export class WebsiteService {
           WHERE p.published IS NOT NULL AND (p.published->>'showInNav')::boolean
           ORDER BY (p.published->>'navOrder')::int, p.id`,
       ),
+      db.query<{ path: string; label: string }>(
+        `SELECT p.path, COALESCE(p.published->>'navLabel', p.published->>'title') AS label
+           FROM website_pages p
+          WHERE p.published IS NOT NULL AND COALESCE((p.published->>'showInFooter')::boolean, FALSE)
+          ORDER BY (p.published->>'navOrder')::int, p.id`,
+      ),
     ]);
-    return { settings: settings.rows[0]?.published ?? null, nav: nav.rows };
+    return { settings: settings.rows[0]?.published ?? null, nav: nav.rows, footerLinks: footer.rows };
   }
 
   /** One page as visitors see it: the published snapshot, visible sections only. */
@@ -150,10 +157,11 @@ export class WebsiteService {
           nav_order = COALESCE($6, nav_order),
           seo_title = CASE WHEN $7::boolean THEN $8 ELSE seo_title END,
           seo_description = CASE WHEN $9::boolean THEN $10 ELSE seo_description END,
+          show_in_footer = COALESCE($11, show_in_footer),
           draft_updated_at = NOW()
         WHERE id = $1`,
       [page.id, dto.title ?? null, dto.navLabel !== undefined, dto.navLabel ?? null, dto.showInNav ?? null, dto.navOrder ?? null,
-       dto.seoTitle !== undefined, dto.seoTitle ?? null, dto.seoDescription !== undefined, dto.seoDescription ?? null],
+       dto.seoTitle !== undefined, dto.seoTitle ?? null, dto.seoDescription !== undefined, dto.seoDescription ?? null, dto.showInFooter ?? null],
     );
     await audit(ctx, { action: 'website.page_update', entity: 'website_page', entityId: slug, details: dto, organizationId: null });
     return this.draftPage(slug);
@@ -234,7 +242,7 @@ export class WebsiteService {
     await db.query(
       `UPDATE website_pages p
           SET published = jsonb_build_object(
-                'title', p.title, 'navLabel', p.nav_label, 'showInNav', p.show_in_nav, 'navOrder', p.nav_order,
+                'title', p.title, 'navLabel', p.nav_label, 'showInNav', p.show_in_nav, 'showInFooter', p.show_in_footer, 'navOrder', p.nav_order,
                 'seoTitle', p.seo_title, 'seoDescription', p.seo_description,
                 'sections', COALESCE((SELECT jsonb_agg(jsonb_build_object('id', s.id, 'type', s.type, 'isVisible', s.is_visible, 'content', s.content)
                                               ORDER BY s.position, s.id)
@@ -251,7 +259,7 @@ export class WebsiteService {
   async discard(slug: string, ctx: RequestContext) {
     const page = await this.pageRow(slug);
     await withTransaction(async (client) => {
-      const { rows } = await client.query<{ published: { title: string; navLabel: string | null; showInNav: boolean; navOrder: number; seoTitle: string | null; seoDescription: string | null; sections: Section[] } | null }>(
+      const { rows } = await client.query<{ published: { title: string; navLabel: string | null; showInNav: boolean; showInFooter?: boolean; navOrder: number; seoTitle: string | null; seoDescription: string | null; sections: Section[] } | null }>(
         'SELECT published FROM website_pages WHERE id = $1 FOR UPDATE',
         [page.id],
       );
@@ -265,8 +273,8 @@ export class WebsiteService {
       }
       await client.query(
         `UPDATE website_pages SET title = $2, nav_label = $3, show_in_nav = $4, nav_order = $5, seo_title = $6, seo_description = $7,
-                draft_updated_at = published_at WHERE id = $1`,
-        [page.id, pub.title, pub.navLabel, pub.showInNav, pub.navOrder, pub.seoTitle, pub.seoDescription],
+                show_in_footer = $8, draft_updated_at = published_at WHERE id = $1`,
+        [page.id, pub.title, pub.navLabel, pub.showInNav, pub.navOrder, pub.seoTitle, pub.seoDescription, pub.showInFooter ?? false],
       );
       // the new rows got new ids: the snapshot refers to them from now on
       await client.query(
@@ -359,7 +367,7 @@ export class WebsiteService {
   // ---------------------------------------------------------------- helpers
 
   private async pageRow(slug: string) {
-    const { rows } = await db.query<{ id: number; slug: string; path: string; title: string; navLabel: string | null; showInNav: boolean; navOrder: number;
+    const { rows } = await db.query<{ id: number; slug: string; path: string; title: string; navLabel: string | null; showInNav: boolean; showInFooter: boolean; navOrder: number;
       seoTitle: string | null; seoDescription: string | null; publishedAt: Date | null; hasChanges: boolean }>(
       `SELECT p.id, ${META}, p.published_at AS "publishedAt", (p.published_at IS NULL OR p.draft_updated_at > p.published_at) AS "hasChanges"
          FROM website_pages p WHERE p.slug = $1`,

@@ -1,5 +1,6 @@
 // Icons the platform owner can pick for feature cards (stored by name).
 import {
+  EnvironmentOutlined, MailOutlined, PhoneOutlined,
   AlertOutlined, ApiOutlined, AppstoreOutlined, BarChartOutlined, BellOutlined, BugOutlined, BulbOutlined, CalendarOutlined,
   CheckCircleOutlined, ClockCircleOutlined, CloudOutlined, DashboardOutlined, ExperimentOutlined, FileTextOutlined, GlobalOutlined,
   HeartOutlined, LockOutlined, MobileOutlined, QuestionCircleOutlined, RocketOutlined, SafetyOutlined, SearchOutlined, SmileOutlined,
@@ -33,6 +34,10 @@ export const FEATURE_ICONS: Record<string, ComponentType> = {
   mobile: MobileOutlined,
   clock: ClockCircleOutlined,
   api: ApiOutlined,
+  mail: MailOutlined,
+  phone: PhoneOutlined,
+  location: EnvironmentOutlined,
+  question: QuestionCircleOutlined,
   smile: SmileOutlined,
 }
 

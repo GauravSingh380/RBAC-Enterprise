@@ -51,7 +51,13 @@ export function PageEditor({ slug, onChanged }: { slug: string; onChanged: () =>
       <Card size="small" style={{ marginBottom: 16 }}>
         <Flex justify="space-between" align="center" gap={12} wrap>
           <Space wrap>
-            {current.hasChanges ? <Badge status="warning" text="Unpublished changes" /> : <Badge status="success" text="Published — visitors see this version" />}
+            {!current.publishedAt ? (
+              <Badge status="default" text="Not published yet — visitors can't open this page" />
+            ) : current.hasChanges ? (
+              <Badge status="warning" text="Unpublished changes" />
+            ) : (
+              <Badge status="success" text="Published — visitors see this version" />
+            )}
             {current.publishedAt && (
               <Typography.Text type="secondary" style={{ fontSize: '0.85em' }}>
                 last published {new Date(current.publishedAt).toLocaleString()}
@@ -63,8 +69,8 @@ export function PageEditor({ slug, onChanged }: { slug: string; onChanged: () =>
               <Button icon={<ExportOutlined />}>Open live page</Button>
             </a>
             <Button icon={<EyeOutlined />} onClick={() => setFullPreview(true)}>Full preview</Button>
-            <Popconfirm title="Discard all unpublished changes?" description="The draft goes back to the published page." onConfirm={() => run(() => websiteAdminApi.discard(slug), 'Changes discarded')} disabled={!current.hasChanges}>
-              <Button icon={<UndoOutlined />} disabled={!current.hasChanges}>Discard</Button>
+            <Popconfirm title="Discard all unpublished changes?" description="The draft goes back to the published page." onConfirm={() => run(() => websiteAdminApi.discard(slug), 'Changes discarded')} disabled={!current.hasChanges || !current.publishedAt}>
+              <Button icon={<UndoOutlined />} disabled={!current.hasChanges || !current.publishedAt}>Discard</Button>
             </Popconfirm>
             <Popconfirm title="Publish this page?" description="Visitors will see the new version right away." onConfirm={() => run(() => websiteAdminApi.publish(slug), 'Published — the page is live')} disabled={!current.hasChanges}>
               <Button type="primary" disabled={!current.hasChanges}>Publish</Button>
@@ -100,7 +106,7 @@ export function PageEditor({ slug, onChanged }: { slug: string; onChanged: () =>
         <Col xs={24} xl={15}>
           <Card size="small" title="Live preview of the draft" styles={{ body: { padding: 0 } }}>
             <div style={{ maxHeight: '75vh', overflowY: 'auto', zoom: 0.72 }}>
-              <SectionList sections={current.previewSections} />
+              <SectionList sections={current.previewSections} preview />
             </div>
           </Card>
         </Col>
@@ -218,8 +224,9 @@ function PageSettings({ page, onSave }: { page: DraftPage; onSave: (data: Partia
               <Row gutter={8}>
                 <Col span={12}><Form.Item name="title" label="Page name" rules={[{ required: true }]}><Input maxLength={100} /></Form.Item></Col>
                 <Col span={12}><Form.Item name="navLabel" label="Menu label"><Input maxLength={40} /></Form.Item></Col>
-                <Col span={12}><Form.Item name="showInNav" label="In the top menu" valuePropName="checked"><Switch /></Form.Item></Col>
-                <Col span={12}><Form.Item name="navOrder" label="Menu order"><InputNumber min={0} max={1000} style={{ width: '100%' }} /></Form.Item></Col>
+                <Col span={8}><Form.Item name="showInNav" label="In the top menu" valuePropName="checked"><Switch /></Form.Item></Col>
+                <Col span={8}><Form.Item name="showInFooter" label="In the footer links" valuePropName="checked" tooltip="Small links at the bottom of every page (e.g. Privacy, Terms)"><Switch /></Form.Item></Col>
+                <Col span={8}><Form.Item name="navOrder" label="Order"><InputNumber min={0} max={1000} style={{ width: '100%' }} /></Form.Item></Col>
               </Row>
               <Form.Item name="seoTitle" label="Browser / Google title" tooltip="Up to about 60 characters"><Input maxLength={70} showCount /></Form.Item>
               <Form.Item name="seoDescription" label="Google description" tooltip="Up to about 155 characters"><Input.TextArea maxLength={170} showCount autoSize={{ minRows: 2 }} /></Form.Item>
@@ -237,7 +244,7 @@ function FullPreview({ page, onClose }: { page: DraftPage; onClose: () => void }
   return (
     <Modal open onCancel={onClose} footer={null} width="96vw" style={{ top: 16 }} title={`Preview: ${page.title} (draft)`} styles={{ body: { padding: 0, maxHeight: '85vh', overflowY: 'auto' } }}>
       <SiteChrome site={site.data ?? { settings: null, nav: [] }} preview>
-        <SectionList sections={page.previewSections} />
+        <SectionList sections={page.previewSections} preview />
       </SiteChrome>
     </Modal>
   )

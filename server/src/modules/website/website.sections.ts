@@ -13,7 +13,10 @@ const optionalText = (max: number) => text(max).nullable().optional();
 const mediaId = z.number().int().positive().nullable().optional();
 const cta = z.object({ label: text(40).min(1), href }).nullable().optional();
 
-export const SECTION_TYPES = ['hero', 'logos', 'features_grid', 'feature_rows', 'stats', 'testimonials', 'cta', 'rich_text', 'pricing', 'faq'] as const;
+export const SECTION_TYPES = ['hero', 'logos', 'features_grid', 'feature_rows', 'stats', 'testimonials', 'cta', 'rich_text', 'pricing', 'faq', 'contact_form'] as const;
+
+/** What a visitor can write to us about (the contact form). */
+export const INQUIRY_TYPES = ['question', 'demo', 'sales', 'support'] as const;
 export type SectionType = (typeof SECTION_TYPES)[number];
 
 export const SECTION_SCHEMAS: Record<SectionType, z.ZodType> = {
@@ -95,6 +98,22 @@ export const SECTION_SCHEMAS: Record<SectionType, z.ZodType> = {
     title: optionalText(140),
     items: z.array(z.object({ question: text(200).min(1), answer: text(2000).min(1) })).max(30),
   }),
+  contact_form: z.object({
+    title: optionalText(140),
+    subtitle: optionalText(400),
+    /** which topics the visitor can pick (the first one is selected by default) */
+    topics: z.array(z.enum(INQUIRY_TYPES)).min(1).max(4),
+    showCompany: z.boolean().default(true),
+    showTeamSize: z.boolean().default(true),
+    showPhone: z.boolean().default(false),
+    successTitle: text(140).min(1),
+    successText: optionalText(400),
+    /** e.g. e-mail, phone, office hours — shown next to the form */
+    contactPoints: z
+      .array(z.object({ icon: optionalText(30), label: text(40).min(1), value: text(200).min(1), href: href.nullable().optional() }))
+      .max(6)
+      .default([]),
+  }),
 };
 
 /** What a newly added section starts with (the editor then fills it in). */
@@ -113,6 +132,10 @@ export const SECTION_DEFAULTS: Record<SectionType, unknown> = {
   rich_text: { title: null, body: 'Write anything here — **markdown** works.', align: 'left' },
   pricing: { title: 'Pricing', subtitle: null, showLimits: true, plans: [], footnote: null },
   faq: { title: 'Frequently asked questions', items: [{ question: 'A question?', answer: 'The answer.' }] },
+  contact_form: {
+    title: 'Contact us', subtitle: null, topics: ['question', 'demo', 'sales', 'support'], showCompany: true, showTeamSize: true, showPhone: false,
+    successTitle: 'Thanks — we will get back to you soon', successText: null, contactPoints: [],
+  },
 };
 
 /** Validates (and cleans) the content of one section. */

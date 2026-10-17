@@ -25,7 +25,8 @@ describe('visitors', () => {
 
     const site = (await publicApi().get('/api/website/site')).body.data;
     expect(site.settings.brandName).toBe('Team-Flex');
-    expect(site.nav.map((n: { path: string }) => n.path)).toEqual(['/features', '/pricing']);
+    expect(site.nav.map((n: { path: string }) => n.path)).toEqual(expect.arrayContaining(['/features', '/pricing']));
+    expect(site.nav.map((n: { path: string }) => n.path)).not.toContain('/'); // home is not in the menu
     expect((await visit('nope')).status).toBe(404);
   });
 
@@ -40,7 +41,7 @@ describe('editing (platform owner only)', () => {
   it('is for platform admins only', async () => {
     expect((await owner.api.get('/platform/website/pages')).status).toBe(403);
     const pages = (await platform.api.get('/platform/website/pages')).body.data;
-    expect(pages.map((p: { slug: string }) => p.slug)).toEqual(['home', 'features', 'pricing']);
+    expect(pages.map((p: { slug: string }) => p.slug)).toEqual(expect.arrayContaining(['home', 'features', 'pricing', 'contact', 'faq', 'privacy', 'terms']));
   });
 
   it('changes are a draft until published; discard goes back', async () => {

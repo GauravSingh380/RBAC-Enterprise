@@ -37,3 +37,12 @@ describe('website helpers', () => {
     ).toEqual({ title: 'Hello', subtitle: null, primaryCta: { label: 'Go', href: '/register' }, secondaryCta: null, mediaId: null, bullets: ['a', 'b'], body: '' })
   })
 })
+
+describe('contact form helpers', () => {
+  it('pre-selects the topic from ?type= only when the form offers it', async () => {
+    const { initialTopic } = await import('../website/websiteMeta')
+    expect(initialTopic('demo', ['question', 'demo'])).toBe('demo')
+    expect(initialTopic('sales', ['question', 'demo'])).toBe('question')
+    expect(initialTopic(null, ['support'])).toBe('support')
+  })
+})
