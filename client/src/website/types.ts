@@ -1,6 +1,24 @@
 // Public website — the shapes the API sends (server/src/modules/website). Kept apart from the app's types.
 
-export type SectionType = 'hero' | 'logos' | 'features_grid' | 'feature_rows' | 'stats' | 'testimonials' | 'cta' | 'rich_text' | 'pricing' | 'faq' | 'contact_form'
+export type SectionType =
+  | 'hero' | 'logos' | 'features_grid' | 'feature_rows' | 'stats' | 'testimonials' | 'cta' | 'rich_text' | 'pricing' | 'faq' | 'contact_form'
+  | 'steps' | 'showcase'
+
+/** drawn product screens (used when no screenshot is uploaded) */
+export type MockName = 'board' | 'qa' | 'insights' | 'calendar' | 'docs' | 'leave' | 'item' | 'roles'
+
+export interface StepsContent {
+  title?: string | null
+  subtitle?: string | null
+  items: { icon?: string | null; title: string; text?: string | null }[]
+  cta?: Cta | null
+}
+export interface ShowcaseContent {
+  eyebrow?: string | null
+  title?: string | null
+  subtitle?: string | null
+  tabs: { label: string; icon?: string | null; title: string; text?: string | null; bullets: string[]; mediaId?: number | null; mock: MockName }[]
+}
 
 export type InquiryType = 'question' | 'demo' | 'sales' | 'support'
 export type InquiryStatus = 'new' | 'replied' | 'closed' | 'spam'
@@ -33,7 +51,7 @@ export interface FeaturesGridContent {
   items: { icon?: string | null; title: string; text?: string | null; href?: string | null }[]
 }
 export interface FeatureRowsContent {
-  items: { eyebrow?: string | null; title: string; text?: string | null; bullets: string[]; mediaId?: number | null; cta?: Cta | null }[]
+  items: { eyebrow?: string | null; title: string; text?: string | null; bullets: string[]; mediaId?: number | null; cta?: Cta | null; mock?: MockName | null }[]
 }
 export interface StatsContent {
   items: { value: string; label: string }[]
@@ -92,6 +110,8 @@ export interface ContactFormContent {
   showPhone: boolean
   successTitle: string
   successText?: string | null
+  responseTime?: string | null
+  nextSteps?: string[]
   contactPoints: { icon?: string | null; label: string; value: string; href?: string | null }[]
 }
 
@@ -107,8 +127,17 @@ export interface SiteSettings {
   logoMediaId?: number | null
   announcement: { enabled: boolean; text?: string | null; href?: string | null }
   header: { loginLabel: string; ctaLabel: string; ctaHref: string }
-  footer: { text?: string | null; columns: { title: string; links: Cta[] }[]; copyright?: string | null }
+  footer: {
+    text?: string | null
+    primaryCta?: Cta | null
+    secondaryCta?: Cta | null
+    columns: { title: string; links: Cta[] }[]
+    copyright?: string | null
+  }
+  social?: { network: SocialNetwork; href: string }[]
 }
+
+export type SocialNetwork = 'linkedin' | 'x' | 'github' | 'youtube' | 'facebook' | 'instagram'
 
 export interface SiteData {
   settings: SiteSettings | null

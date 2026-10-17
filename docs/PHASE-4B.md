@@ -65,3 +65,21 @@ The "new inquiry" e-mail links to `/platform/website?tab=inquiries&inquiry=12`, 
 `inquiryReceived`, `inquiryNew`, `inquiryReply` in `server/src/modules/email/email.templates.ts` ·
 client `website/sections/ContactForm.tsx`, `website/admin/InquiriesInbox.tsx` · tests
 `server/tests/api/website-inquiries.test.ts`.
+
+## 4c — Polish: product tour, how it works, FAQ help centre, contact and footer
+
+* **Two new section types.** `showcase` is the product tour: tabs, each with a screenshot or a drawn screen.
+  `steps` is "how it works". They follow the same three steps as every type: schema, renderer, form.
+* **Drawn screens** (`client/src/website/sections/mocks.tsx`) are small React drawings of the real product, built
+  with theme tokens, so they look right in light and dark mode. An image + text row without a screenshot picks
+  the screen that fits its topic (`guessMock`: "quality" shows QA, "roles" shows the permission matrix, …).
+  The editor can choose one explicitly.
+* **FAQ help centre without new data.** `SectionList` groups two or more FAQ sections in a row
+  (`groupFaqRuns`) into one component with search and categories. The platform owner still edits ordinary FAQ
+  sections, one per category.
+* **The upgrade adds, it never overwrites** (migration `0008`):
+  * the new Home sections go into the draft **and** the published snapshot at the same place
+  * the new contact fields are merged in, with the owner's values winning
+  * the new footer is applied only if the footer still had the starting columns
+* **Checked in a real browser:** headless Edge screenshots of every page, in light and dark mode, at desktop
+  and phone widths.

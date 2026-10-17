@@ -46,3 +46,24 @@ describe('contact form helpers', () => {
     expect(initialTopic(null, ['support'])).toBe('support')
   })
 })
+
+describe('website 4c helpers', () => {
+  it('picks the drawn screen from a row topic', async () => {
+    const { guessMock } = await import('../website/websiteMeta')
+    expect(guessMock("Planning Sprints that fit your team's real week")).toBe('board')
+    expect(guessMock('Quality Fixed means verified')).toBe('qa')
+    expect(guessMock('Insights See the whole organization at a glance')).toBe('insights')
+    expect(guessMock('People Teams, managers, leave and holidays')).toBe('leave')
+    expect(guessMock('Knowledge Docs and calendar next to the work')).toBe('docs')
+    expect(guessMock('Administration Roles, guests and security')).toBe('roles')
+    expect(guessMock('Work items Every detail of the work, in one item')).toBe('item')
+    expect(guessMock('Something completely different')).toBeUndefined()
+  })
+
+  it('groups consecutive FAQ sections into one help centre', async () => {
+    const { groupFaqRuns } = await import('../website/websiteMeta')
+    const s = (type: string, id: number) => ({ type, id })
+    const out = groupFaqRuns([s('rich_text', 1), s('faq', 2), s('faq', 3), s('cta', 4), s('faq', 5)])
+    expect(out).toEqual([s('rich_text', 1), [s('faq', 2), s('faq', 3)], s('cta', 4), s('faq', 5)])
+  })
+})

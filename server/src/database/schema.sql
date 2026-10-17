@@ -1033,8 +1033,8 @@ CREATE TABLE IF NOT EXISTS website_sections (
   id          SERIAL PRIMARY KEY,
   page_id     INT         NOT NULL REFERENCES website_pages(id) ON DELETE CASCADE,
   type        VARCHAR(30) NOT NULL CONSTRAINT website_sections_type_check
-                          CHECK (type IN ('hero', 'logos', 'features_grid', 'feature_rows', 'stats',
-                                          'testimonials', 'cta', 'rich_text', 'pricing', 'faq', 'contact_form')),
+                          CHECK (type IN ('hero', 'logos', 'features_grid', 'feature_rows', 'stats', 'testimonials', 'cta',
+                                          'rich_text', 'pricing', 'faq', 'contact_form', 'steps', 'showcase')),
   position    INT         NOT NULL DEFAULT 0,
   is_visible  BOOLEAN     NOT NULL DEFAULT TRUE,
   content     JSONB       NOT NULL DEFAULT '{}'::jsonb,   -- shape depends on the type (validated by the API)
@@ -1114,15 +1114,15 @@ BEGIN
   END IF;
 END $$;
 
--- Phase 4b upgrades: footer links per page, the contact form section type
+-- Phase 4b/4c upgrades: footer links per page, contact form / steps / showcase section types
 ALTER TABLE website_pages ADD COLUMN IF NOT EXISTS show_in_footer BOOLEAN NOT NULL DEFAULT FALSE;
 DO $$
 BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'website_sections_type_check'
-                    AND pg_get_constraintdef(oid) LIKE '%contact_form%') THEN
+                    AND pg_get_constraintdef(oid) LIKE '%showcase%') THEN
     ALTER TABLE website_sections DROP CONSTRAINT IF EXISTS website_sections_type_check;
     ALTER TABLE website_sections ADD CONSTRAINT website_sections_type_check
-      CHECK (type IN ('hero', 'logos', 'features_grid', 'feature_rows', 'stats', 'testimonials', 'cta', 'rich_text', 'pricing', 'faq', 'contact_form'));
+      CHECK (type IN ('hero', 'logos', 'features_grid', 'feature_rows', 'stats', 'testimonials', 'cta', 'rich_text', 'pricing', 'faq', 'contact_form', 'steps', 'showcase'));
   END IF;
 END $$;
 
@@ -2157,7 +2157,49 @@ SELECT p.id, v.type, v.position, v.visible, v.content::jsonb
       { "icon": "safety", "title": "Roles & security", "text": "Custom roles, password and session rules, audit log and a trash for mistakes." }
     ]
   }$json$),
-  ('home', 'feature_rows', 4, TRUE, $json${
+  ('home', 'steps', 4, TRUE, $json${
+    "title": "From sign-up to shipping in four steps",
+    "subtitle": "No consultants, no long setup. Most teams plan their first sprint on day one.",
+    "items": [
+      { "icon": "rocket", "title": "Create your organization", "text": "Sign up, name your workspace and start on the free plan — no credit card." },
+      { "icon": "team", "title": "Invite your team", "text": "Add people with roles, set up teams and managers, and invite clients as guests." },
+      { "icon": "board", "title": "Plan the work", "text": "Pick Kanban, Scrum or Bug tracking and plan your first sprint with everyone's availability in view." },
+      { "icon": "check", "title": "Ship with confidence", "text": "QA verifies every fix, insights show what needs attention, and nothing deleted is lost for 30 days." }
+    ],
+    "cta": { "label": "Start free", "href": "/register" }
+  }$json$),
+  ('home', 'showcase', 5, TRUE, $json${
+    "eyebrow": "Product tour",
+    "title": "See what your team will use every day",
+    "subtitle": "One product instead of five tools. Click through the screens your team works in.",
+    "tabs": [
+      { "label": "Boards", "icon": "board", "mock": "board", "mediaId": null,
+        "title": "Boards your team actually keeps up to date",
+        "text": "Drag work across columns, keep work-in-progress under control and see changes from others appear live — no refresh, no status meetings.",
+        "bullets": ["Kanban, Scrum and bug-tracking workflows", "Live updates for everyone on the board", "Saved views, filters and bulk edit"] },
+      { "label": "Quality", "icon": "bug", "mock": "qa", "mediaId": null,
+        "title": "A QA flow that proves every fix",
+        "text": "Developers send a fixed bug to Ready for QA; QA verifies it or reopens it with a reason. Test runs file bugs from failed steps, and production errors become bugs in one click.",
+        "bullets": ["Verified or reopened — never just \"done\"", "Test runs with per-step results", "Errors grouped and linked to bugs"] },
+      { "label": "Docs", "icon": "file", "mock": "docs", "mediaId": null,
+        "title": "Specs and decisions next to the work",
+        "text": "Every project has its own docs: specifications, meeting notes and decisions, with full version history and search.",
+        "bullets": ["Pages and sub-pages in markdown", "History — restore any version", "Search across all pages"] },
+      { "label": "Calendar", "icon": "calendar", "mock": "calendar", "mediaId": null,
+        "title": "Due dates, sprints and absences at a glance",
+        "text": "See the month of a project — or just your own work — and drag an item to another day to reschedule it.",
+        "bullets": ["Sprints as bands across their dates", "Who is away and public holidays", "Drag to change a due date"] },
+      { "label": "People", "icon": "team", "mock": "leave", "mediaId": null,
+        "title": "Leave, holidays and capacity built in",
+        "text": "Leave requests go to the right manager, holiday calendars are per office, and sprint capacity already counts who is away.",
+        "bullets": ["Requests, approvals and balances", "Team calendar for everyone", "Capacity per person and team"] },
+      { "label": "Insights", "icon": "chart", "mock": "insights", "mediaId": null,
+        "title": "The whole organization on one screen",
+        "text": "Which projects need attention and why, who is overloaded, how quality is trending — plus a weekly summary in your inbox.",
+        "bullets": ["Project health with reasons", "Workload by person and team", "Weekly report by email"] }
+    ]
+  }$json$),
+  ('home', 'feature_rows', 6, TRUE, $json${
     "items": [
       { "eyebrow": "Planning", "title": "Sprints that fit your team's real week",
         "text": "Plan in the backlog, drag work into sprints and see instantly if it fits — leave and holidays are already counted.",
@@ -2170,15 +2212,15 @@ SELECT p.id, v.type, v.position, v.visible, v.content::jsonb
         "bullets": ["Project health with reasons", "Workload by person and team", "CSV export"], "mediaId": null }
     ]
   }$json$),
-  ('home', 'logos', 5, FALSE, $json${
+  ('home', 'logos', 7, FALSE, $json${
     "title": "Teams that ship with Team-Flex",
     "items": [ { "name": "Replace with a customer logo", "mediaId": null, "href": null } ]
   }$json$),
-  ('home', 'testimonials', 6, FALSE, $json${
+  ('home', 'testimonials', 8, FALSE, $json${
     "title": "What teams say",
     "items": [ { "quote": "Replace this with a real quote from a customer.", "name": "Customer name", "role": "Role", "company": "Company", "mediaId": null } ]
   }$json$),
-  ('home', 'cta', 7, TRUE, $json${
+  ('home', 'cta', 9, TRUE, $json${
     "title": "Start in minutes",
     "text": "Create your organization, invite your team and plan your first sprint today. The free plan needs no credit card.",
     "primaryCta": { "label": "Create your organization", "href": "/register" },
@@ -2300,6 +2342,12 @@ SELECT p.id, v.type, v.position, TRUE, v.content::jsonb
     "showPhone": false,
     "successTitle": "Thanks — your message is on its way",
     "successText": "We've sent a copy to your email address and will reply soon.",
+    "responseTime": "Replies within 1 working day",
+    "nextSteps": [
+      "We read every message — a real person, no bots",
+      "You get an answer by email, usually within one working day",
+      "For a demo, we agree a time and show Team-Flex with your own use case"
+    ],
     "contactPoints": [
       { "icon": "mail", "label": "Email", "value": "Replace with your support address", "href": null },
       { "icon": "clock", "label": "Hours", "value": "Monday to Friday, 9:00–18:00", "href": null },
@@ -2393,12 +2441,15 @@ SELECT 1, c.content::jsonb, c.content::jsonb, NOW()
     "logoMediaId": null,
     "announcement": { "enabled": true, "text": "New: project docs, calendar and recurring work are here.", "href": "/features" },
     "header": { "loginLabel": "Log in", "ctaLabel": "Start free", "ctaHref": "/register" },
+    "social": [],
     "footer": {
-      "text": "Team-Flex is one place for your team's work, quality and people.",
+      "text": "Team-Flex brings planning, quality and people together — so your team ships with confidence.",
+      "primaryCta": { "label": "Start free", "href": "/register" },
+      "secondaryCta": { "label": "Book a demo", "href": "/contact?type=demo" },
       "columns": [
         { "title": "Product", "links": [ { "label": "Features", "href": "/features" }, { "label": "Pricing", "href": "/pricing" }, { "label": "FAQ", "href": "/faq" } ] },
-        { "title": "Company", "links": [ { "label": "Contact us", "href": "/contact" }, { "label": "Book a demo", "href": "/contact?type=demo" } ] },
-        { "title": "Get started", "links": [ { "label": "Create an account", "href": "/register" }, { "label": "Log in", "href": "/login" } ] }
+        { "title": "Company", "links": [ { "label": "Contact us", "href": "/contact" }, { "label": "Book a demo", "href": "/contact?type=demo" }, { "label": "Talk to sales", "href": "/contact?type=sales" } ] },
+        { "title": "Get started", "links": [ { "label": "Create an account", "href": "/register" }, { "label": "Log in", "href": "/login" }, { "label": "Help Center", "href": "/guide" } ] }
       ],
       "copyright": "© {year} Team-Flex. All rights reserved."
     }

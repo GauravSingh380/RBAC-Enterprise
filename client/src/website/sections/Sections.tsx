@@ -1,16 +1,16 @@
 // One component per section type. Content comes from Platform → Website (validated by the server).
 import { CheckOutlined } from '@ant-design/icons'
-import { Avatar, Carousel, Collapse, Tag, Typography, theme } from 'antd'
+import { Avatar, Carousel, Tag, Typography, theme } from 'antd'
 import type { CSSProperties } from 'react'
 import { Link } from 'react-router-dom'
 import { MarkdownView } from '../../pages/projects/shared/Markdown'
 import { mediaUrl } from '../api'
 import { FeatureIcon } from '../icons'
 import type {
-  CtaContent, FaqContent, FeatureRowsContent, FeaturesGridContent, HeroContent, HeroSlide, LogosContent, PricingContent, RichTextContent,
+  CtaContent, FeatureRowsContent, FeaturesGridContent, HeroContent, HeroSlide, LogosContent, PricingContent, RichTextContent,
   StatsContent, TestimonialsContent,
 } from '../types'
-import { isInternalHref, limitLines } from '../websiteMeta'
+import { guessMock, isInternalHref, limitLines } from '../websiteMeta'
 import { CtaButtons, CtaLink, Visual } from './parts'
 
 function Heading({ title, subtitle, center = true }: { title?: string | null; subtitle?: string | null; center?: boolean }) {
@@ -156,7 +156,7 @@ export function FeatureRowsSection({ content }: { content: FeatureRowsContent })
               )}
               {r.cta && <CtaLink cta={r.cta} size="middle" />}
             </div>
-            <Visual mediaId={r.mediaId} alt={r.title} variant={i + 1} />
+            <Visual mediaId={r.mediaId} alt={r.title} variant={i + 1} mock={r.mock ?? guessMock(`${r.eyebrow ?? ''} ${r.title}`)} />
           </div>
         ))}
       </div>
@@ -206,7 +206,7 @@ export function CtaSection({ content }: { content: CtaContent }) {
         }}
       >
         <h2 className="wf-h2" style={{ color: '#fff' }}>{content.title}</h2>
-        {content.text && <p className="wf-lead wf-narrow" style={{ color: 'rgba(255,255,255,0.88)' }}>{content.text}</p>}
+        {content.text && <p className="wf-lead" style={{ color: 'rgba(255,255,255,0.88)', maxWidth: 680, marginInline: 'auto' }}>{content.text}</p>}
         <div className="wf-buttons" style={{ justifyContent: 'center' }}>
           {content.primaryCta && <CtaLink cta={content.primaryCta} />}
           {content.secondaryCta &&
@@ -238,7 +238,7 @@ export function RichTextSection({ content }: { content: RichTextContent }) {
   )
 }
 
-// ---------------------------------------------------------------- pricing, faq
+// ---------------------------------------------------------------- pricing
 
 export function PricingSection({ content }: { content: PricingContent }) {
   const { token } = theme.useToken()
@@ -298,24 +298,6 @@ export function PricingSection({ content }: { content: PricingContent }) {
             {content.footnote}
           </Typography.Paragraph>
         )}
-      </div>
-    </section>
-  )
-}
-
-export function FaqSection({ content }: { content: FaqContent }) {
-  return (
-    <section className="wf-section">
-      <div className="wf-narrow">
-        <Heading title={content.title} />
-        <Collapse
-          size="large"
-          items={content.items.map((q, i) => ({
-            key: i,
-            label: <strong>{q.question}</strong>,
-            children: <MarkdownView value={q.answer} empty="" />,
-          }))}
-        />
       </div>
     </section>
   )

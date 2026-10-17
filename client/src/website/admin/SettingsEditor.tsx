@@ -1,6 +1,6 @@
 // Header, footer and announcement bar of the website (draft → publish, like the pages).
 import { DeleteOutlined, PlusOutlined } from '@ant-design/icons'
-import { Alert, App, Badge, Button, Card, Col, Flex, Form, Input, Popconfirm, Row, Skeleton, Space, Switch, Typography } from 'antd'
+import { Alert, App, Badge, Button, Card, Col, Flex, Form, Input, Popconfirm, Row, Select, Skeleton, Space, Switch, Typography } from 'antd'
 import { useCallback, useEffect, useState } from 'react'
 import { useFetch } from '../../hooks/useFetch'
 import { getErrorMessage } from '../../lib/api'
@@ -87,6 +87,22 @@ export function SettingsEditor({ onChanged }: { onChanged: () => void }) {
 
         <Typography.Title level={5}>Footer</Typography.Title>
         <Form.Item name={['footer', 'text']} label="Text under the name"><Input.TextArea maxLength={300} autoSize={{ minRows: 2 }} /></Form.Item>
+        <Row gutter={16}>
+          <Col xs={24} md={12}>
+            <Typography.Text strong>Footer main button</Typography.Text>
+            <Row gutter={8} style={{ marginTop: 8 }}>
+              <Col span={10}><Form.Item name={['footer', 'primaryCta', 'label']}><Input placeholder="Start free" maxLength={40} /></Form.Item></Col>
+              <Col span={14}><Form.Item name={['footer', 'primaryCta', 'href']} rules={[hrefRule]}><Input placeholder="/register" /></Form.Item></Col>
+            </Row>
+          </Col>
+          <Col xs={24} md={12}>
+            <Typography.Text strong>Footer second button</Typography.Text>
+            <Row gutter={8} style={{ marginTop: 8 }}>
+              <Col span={10}><Form.Item name={['footer', 'secondaryCta', 'label']}><Input placeholder="Book a demo" maxLength={40} /></Form.Item></Col>
+              <Col span={14}><Form.Item name={['footer', 'secondaryCta', 'href']} rules={[hrefRule]}><Input placeholder="/contact?type=demo" /></Form.Item></Col>
+            </Row>
+          </Col>
+        </Row>
         <Form.List name={['footer', 'columns']}>
           {(cols, colOps) => (
             <Flex vertical gap={12} style={{ marginBottom: 12 }}>
@@ -120,6 +136,26 @@ export function SettingsEditor({ onChanged }: { onChanged: () => void }) {
           )}
         </Form.List>
         <Form.Item name={['footer', 'copyright']} label="Copyright line" tooltip="{year} becomes the current year"><Input maxLength={160} /></Form.Item>
+
+        <Typography.Title level={5}>Social profiles</Typography.Title>
+        <Form.List name="social">
+          {(rows, ops) => (
+            <>
+              {rows.map((r) => (
+                <Row key={r.key} gutter={8} align="middle">
+                  <Col span={8}>
+                    <Form.Item name={[r.name, 'network']} rules={[{ required: true }]}>
+                      <Select options={['linkedin', 'x', 'github', 'youtube', 'facebook', 'instagram'].map((n) => ({ value: n, label: n === 'x' ? 'X (Twitter)' : n[0]!.toUpperCase() + n.slice(1) }))} />
+                    </Form.Item>
+                  </Col>
+                  <Col span={14}><Form.Item name={[r.name, 'href']} rules={[{ required: true }, hrefRule]}><Input placeholder="https://www.linkedin.com/company/…" /></Form.Item></Col>
+                  <Col span={2}><Button type="text" danger icon={<DeleteOutlined />} onClick={() => ops.remove(r.name)} style={{ marginBottom: 24 }} aria-label="Remove profile" /></Col>
+                </Row>
+              ))}
+              <Button size="small" icon={<PlusOutlined />} onClick={() => ops.add({ network: 'linkedin', href: 'https://' })} disabled={rows.length >= 6}>Add social profile</Button>
+            </>
+          )}
+        </Form.List>
       </Form>
     </Card>
   )

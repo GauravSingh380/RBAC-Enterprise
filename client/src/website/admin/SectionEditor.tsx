@@ -9,7 +9,7 @@ import { websiteAdminApi } from '../api'
 import { FeatureIcon } from '../icons'
 import { ICON_NAMES } from '../iconMap'
 import type { DraftPage, PlanInfo, Section } from '../types'
-import { INQUIRY_TYPES, SAFE_HREF, sectionLabel } from '../websiteMeta'
+import { INQUIRY_TYPES, MOCK_OPTIONS, SAFE_HREF, sectionLabel } from '../websiteMeta'
 import { cleanContent } from './formMeta'
 import { MediaField } from './MediaLibrary'
 
@@ -229,8 +229,11 @@ function Fields({ type, plans }: { type: Section['type']; plans: PlanInfo[] }) {
               <Form.Item name={[f.name, 'bullets']} label="Bullet points" tooltip="Type and press Enter">
                 <Select mode="tags" tokenSeparators={['\n']} open={false} placeholder="Type a point and press Enter" />
               </Form.Item>
-              <Form.Item name={[f.name, 'mediaId']} label="Image" tooltip="Without an image, a drawn product preview is shown">
-                <MediaField emptyLabel="Drawn product preview" />
+              <Form.Item name={[f.name, 'mediaId']} label="Image" tooltip="Without an image, a drawn product screen is shown">
+                <MediaField emptyLabel="Drawn product screen" />
+              </Form.Item>
+              <Form.Item name={[f.name, 'mock']} label="Drawn screen (when there is no image)" tooltip="Empty = chosen from the row's topic">
+                <Select allowClear placeholder="Automatic" options={MOCK_OPTIONS} />
               </Form.Item>
               <CtaFields name={[f.name, 'cta']} label="Button (optional)" />
             </>
@@ -365,6 +368,70 @@ function Fields({ type, plans }: { type: Section['type']; plans: PlanInfo[] }) {
           </ListEditor>
         </>
       )
+    case 'steps':
+      return (
+        <>
+          <Title />
+          <Form.Item name="subtitle" label="Text under the heading">
+            <TextArea autoSize={{ minRows: 2 }} maxLength={300} />
+          </Form.Item>
+          <ListEditor name="items" title="Steps (numbered automatically)" addLabel="Add step" max={6} newItem={{ icon: 'check', title: 'New step' }}>
+            {(f) => (
+              <Row gutter={8}>
+                <Col span={8}>
+                  <Form.Item name={[f.name, 'icon']} label="Icon">
+                    <Select showSearch options={ICON_NAMES.map((n) => ({ value: n, label: <Space><FeatureIcon name={n} />{n}</Space> }))} />
+                  </Form.Item>
+                </Col>
+                <Col span={16}>
+                  <Form.Item name={[f.name, 'title']} label="Title" rules={[{ required: true }]}><Input maxLength={80} /></Form.Item>
+                </Col>
+                <Col span={24}>
+                  <Form.Item name={[f.name, 'text']} label="Text"><TextArea autoSize={{ minRows: 2 }} maxLength={300} /></Form.Item>
+                </Col>
+              </Row>
+            )}
+          </ListEditor>
+          <CtaFields name={['cta']} label="Button under the steps (optional)" />
+        </>
+      )
+    case 'showcase':
+      return (
+        <>
+          <Form.Item name="eyebrow" label="Small text above the heading"><Input maxLength={60} /></Form.Item>
+          <Title />
+          <Form.Item name="subtitle" label="Text under the heading">
+            <TextArea autoSize={{ minRows: 2 }} maxLength={300} />
+          </Form.Item>
+          <ListEditor name="tabs" title="Tabs (one product screen each)" addLabel="Add tab" max={8} newItem={{ label: 'New tab', icon: 'board', title: 'A screen', bullets: [], mock: 'board' }}>
+            {(f) => (
+              <>
+                <Row gutter={8}>
+                  <Col span={8}><Form.Item name={[f.name, 'label']} label="Tab label" rules={[{ required: true }]}><Input maxLength={30} /></Form.Item></Col>
+                  <Col span={8}>
+                    <Form.Item name={[f.name, 'icon']} label="Icon">
+                      <Select showSearch options={ICON_NAMES.map((n) => ({ value: n, label: <Space><FeatureIcon name={n} />{n}</Space> }))} />
+                    </Form.Item>
+                  </Col>
+                  <Col span={8}>
+                    <Form.Item name={[f.name, 'mock']} label="Drawn screen" tooltip="Shown when no screenshot is uploaded">
+                      <Select options={MOCK_OPTIONS} />
+                    </Form.Item>
+                  </Col>
+                </Row>
+                <Form.Item name={[f.name, 'title']} label="Title" rules={[{ required: true }]}><Input maxLength={140} /></Form.Item>
+                <Form.Item name={[f.name, 'text']} label="Text"><TextArea autoSize={{ minRows: 3 }} maxLength={600} showCount /></Form.Item>
+                <Form.Item name={[f.name, 'bullets']} label="Bullet points" tooltip="Type and press Enter">
+                  <Select mode="tags" open={false} placeholder="Type a point and press Enter" />
+                </Form.Item>
+                <Form.Item name={[f.name, 'mediaId']} label="Screenshot (optional)">
+                  <MediaField emptyLabel="Uses the drawn screen" />
+                </Form.Item>
+              </>
+            )}
+          </ListEditor>
+        </>
+      )
     case 'contact_form':
       return (
         <>
@@ -385,6 +452,12 @@ function Fields({ type, plans }: { type: Section['type']; plans: PlanInfo[] }) {
           </Form.Item>
           <Form.Item name="successText" label="Thank-you text">
             <Input maxLength={400} />
+          </Form.Item>
+          <Form.Item name="responseTime" label="Response time badge" tooltip="Shown on the coloured panel, e.g. “Replies within 1 working day”">
+            <Input maxLength={60} />
+          </Form.Item>
+          <Form.Item name="nextSteps" label="What happens next (up to 4 steps)" tooltip="Type a step and press Enter">
+            <Select mode="tags" open={false} maxCount={4} placeholder="Type a step and press Enter" />
           </Form.Item>
           <ListEditor name="contactPoints" title="Contact details next to the form" addLabel="Add contact detail" max={6} newItem={{ icon: 'mail', label: 'Email', value: '' }}>
             {(f) => (

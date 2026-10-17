@@ -23,6 +23,7 @@ automated tests and an Ant Design UI.
 > - **Phase 3f — everyday work** ✅ **checklists** in items (progress on cards), **templates** per project (+ **repeating** every weekday / week / month), **trash** for items, docs and projects (restore within 30 days), project **docs** (wiki pages with history and search), **calendar** of due dates, sprints and absences (drag to reschedule) — also in My Work
 > - **Phase 4a — public website** ✅ **Home**, **Features** and **Pricing** pages built from sections (hero slider, feature grid, image + text rows, numbers, logos, testimonials, pricing from Plans, FAQ, text, call to action), header & footer, image library — all edited by the platform owner in **Platform → Website** with draft → preview → publish. Own module: `server/src/modules/website`, `client/src/website`
 > - **Phase 4b — Contact, FAQ, legal** ✅ **Contact** page with a contact-form section → **Inquiries inbox** (status, internal notes, replies by e-mail, spam), automatic e-mails to the sender and the platform admins, bot protection without external services; **FAQ** page; **Privacy** and **Terms** templates (unpublished until reviewed) shown in the footer links once published
+> - **Phase 4c — website polish** ✅ **Product tour** (tabs with drawn product screens: board, work item, QA, docs, calendar, leave, insights, roles) and **How it works** sections on Home, searchable **FAQ help centre** with categories, redesigned **Contact** page (topic cards, response time, what happens next), dark multi-column **footer** with buttons and social links
 > - Next: releases & roadmap · time tracking · integrations (see [roadmap](#18-roadmap))
 >
 > 📘 **New to the code?** Read the learning guides — **[PHASE-2.md](PHASE-2.md)** (2a–2c) and **[PHASE-2D-2E.md](PHASE-2D-2E.md)** (boards, realtime, sprints, reports) , **[PHASE-2F.md](PHASE-2F.md)** (bug flow, test management, production errors), **[PHASE-2G.md](PHASE-2G.md)** (dashboards, reports, leave & holidays) , **[PHASE-2H-3A.md](PHASE-2H-3A.md)** (notifications, capacity planning) , **[PHASE-3B.md](PHASE-3B.md)** (organization insights) , **[PHASE-3C.md](PHASE-3C.md)** (teams, managers, My Work) , **[PHASE-3D.md](PHASE-3D.md)** (Help Center) , **[PHASE-3E.md](PHASE-3E.md)** (security rules, plans, guests) , **[PHASE-3F.md](PHASE-3F.md)** (checklists, templates, trash, docs, calendar) , **[PHASE-4A.md](PHASE-4A.md)** (public website) and **[PHASE-4B.md](PHASE-4B.md)** (contact form, inquiries, FAQ, legal pages): how it works inside, why, and where to look.
@@ -498,6 +499,17 @@ Charts follow the validated palette: two series blue / orange; severity is **ord
 | **Weekly report** | job `insights.weekly-report` every **Monday 08:00** (`job_schedules`): last week's numbers, projects needing attention, most loaded people, who is away, pending approvals — to everyone with `insights.view` who keeps the "Weekly organization report" setting on; "Email me the weekly report" sends a preview now |
 | Period | 7 / 30 / 90 days |
 
+### Website polish (4c)
+
+| | |
+|---|---|
+| **New section types** | `showcase` — product tour: tabs (label, icon, title, text, bullets, screenshot **or** a drawn screen) · `steps` — numbered "how it works" cards + button |
+| **Drawn product screens** | `sections/mocks.tsx`: board, work item, QA flow + test run, docs, calendar, team leave, insights, roles & permissions — realistic, theme-aware, shown wherever no screenshot is uploaded; image + text rows pick the screen from their topic (`guessMock`) or the one chosen in the editor |
+| **FAQ** | two or more FAQ sections in a row render as one **help centre**: search across all questions, categories with counts, "still have a question?" card; a single FAQ section is a two-column accordion |
+| **Contact** | coloured side panel (contact details, response-time badge, "what happens next"), topic **cards** (`?type=demo` pre-selects), confirmation with the e-mail address |
+| **Footer** | dark, brand block with two buttons and **social profiles** (LinkedIn, X, GitHub, YouTube, Facebook, Instagram), link columns, legal links in the bottom bar — all in Header & footer |
+| Upgrade (`0008`) | adds "How it works" + "Product tour" to Home and the new contact fields (draft and published), and the new footer only if it still had the starting columns — the platform owner's own text is never replaced |
+
 ### Contact, inquiries, FAQ & legal pages (4b)
 
 | | |
@@ -929,10 +941,10 @@ List endpoints accept `?page=&limit=&search=` and return `{ items, total, page, 
 
 | `api/website-inquiries` | Contact / FAQ live and in the menu, legal pages 404 until published then in the footer links, footer flag published with the page, contact section validated · form stored + e-mails to sender and platform admins, validation, honeypot and too-fast → spam without e-mails · inbox admin-only, filters and counts, notes, reply e-mailed and kept, close, unknown status refused, delete |
 
-**223 tests, all passing.** (Test organizations start on the unlimited plan — `tests/helpers.ts` — so only the plan tests see limits.)
+**225 tests, all passing.** (Test organizations start on the unlimited plan — `tests/helpers.ts` — so only the plan tests see limits.)
 
 ### Client — `cd client; npm test`
-Vitest unit tests for pure logic (`src/__tests__`): API error mapping, work-item rules, board move / neighbour rules, realtime event filter, QA flow / test outcome / browser detection, leave calendar helpers, availability / due-date helpers, My Work grouping, Help Center snippet / app-path helpers, plan usage rows and security form helpers, month grid / docs tree / repeat labels , website link rules / plan limit lines / section summaries / form cleaning, contact topic from `?type=` (42 tests).
+Vitest unit tests for pure logic (`src/__tests__`): API error mapping, work-item rules, board move / neighbour rules, realtime event filter, QA flow / test outcome / browser detection, leave calendar helpers, availability / due-date helpers, My Work grouping, Help Center snippet / app-path helpers, plan usage rows and security form helpers, month grid / docs tree / repeat labels , website link rules / plan limit lines / section summaries / form cleaning, contact topic from `?type=`, drawn screen per topic, FAQ grouping (44 tests).
 
 ---
 
@@ -1027,3 +1039,4 @@ Example: **Sprints** (phase 2e) — built exactly this way, see `server/src/modu
 | 22 | **3f** Checklists in items, templates + repeating work, trash (items, docs, projects; 30 days), project docs with history and search, calendar (project + My Work) with drag-to-reschedule, 4 Help Center articles |
 | 23 | **4a** Public website (separate module): Home, Features, Pricing from sections (hero slider, features, image rows, numbers, logos, testimonials, pricing from Plans, FAQ, text, CTA), header & footer, image library, draft → preview → publish in Platform → Website (replaces Platform → Home Page) |
 | 24 | **4b** Contact page with contact-form section and Inquiries inbox (notes, e-mail replies, spam protection), FAQ page, Privacy / Terms templates (published by the owner), footer links per page |
+| 25 | **4c** Website polish: product tour with drawn product screens, how it works, searchable FAQ help centre, redesigned contact page, dark footer with buttons and social links |

@@ -11,8 +11,9 @@ import { useFetch } from '../../hooks/useFetch'
 import { ThemeControls } from '../../theme/ThemeControls'
 import { mediaUrl, websiteApi } from '../api'
 import type { SiteData, SiteSettings } from '../types'
-import { fillYear, isInternalHref } from '../websiteMeta'
+import { isInternalHref } from '../websiteMeta'
 import '../website.css'
+import { SiteFooter } from './SiteFooter'
 
 const FALLBACK: SiteSettings = {
   brandName: 'Team-Flex',
@@ -41,13 +42,6 @@ export function SiteChrome({ site, children, preview }: { site: SiteData; childr
   const { user } = useAuth()
   const [menu, setMenu] = useState(false)
   const s = site.settings ?? FALLBACK
-  const link = (href: string, label: string, onClick?: () => void) =>
-    isInternalHref(href) ? (
-      <Link to={href} onClick={onClick} style={{ color: token.colorTextSecondary }}>{label}</Link>
-    ) : (
-      <a href={href} onClick={onClick} style={{ color: token.colorTextSecondary }}>{label}</a>
-    )
-
   const navLinks = site.nav.map((n) => (
     <NavLink key={n.path} to={n.path} onClick={() => setMenu(false)}>
       {({ isActive }) => (
@@ -127,37 +121,7 @@ export function SiteChrome({ site, children, preview }: { site: SiteData; childr
 
       <main style={{ flex: 1 }}>{children}</main>
 
-      <footer style={{ background: token.colorBgContainer, borderTop: `1px solid ${token.colorBorderSecondary}`, padding: '48px 16px 24px' }}>
-        <div className="wf-container">
-          <div className="wf-footer-grid">
-            <div>
-              <Typography.Text strong style={{ fontSize: '1.1em' }}>{s.brandName}</Typography.Text>
-              {s.footer.text && <Typography.Paragraph type="secondary" style={{ marginTop: 8, maxWidth: 360 }}>{s.footer.text}</Typography.Paragraph>}
-            </div>
-            {s.footer.columns.map((c) => (
-              <div key={c.title}>
-                <Typography.Text strong>{c.title}</Typography.Text>
-                <Flex vertical gap={6} style={{ marginTop: 10 }}>
-                  {c.links.map((l) => <span key={l.label}>{link(l.href, l.label)}</span>)}
-                </Flex>
-              </div>
-            ))}
-          </div>
-          <Flex justify="space-between" gap={12} wrap style={{ marginTop: 32 }}>
-            {s.footer.copyright ? (
-              <Typography.Text type="secondary" style={{ fontSize: '0.9em' }}>{fillYear(s.footer.copyright)}</Typography.Text>
-            ) : (
-              <span />
-            )}
-            {/* published pages with "in the footer" (Privacy, Terms, …) */}
-            {!!site.footerLinks?.length && (
-              <Flex gap={16} wrap style={{ fontSize: '0.9em' }}>
-                {site.footerLinks.map((l) => <span key={l.path}>{link(l.path, l.label)}</span>)}
-              </Flex>
-            )}
-          </Flex>
-        </div>
-      </footer>
+      <SiteFooter s={s} site={site} />
     </Layout>
   )
 }

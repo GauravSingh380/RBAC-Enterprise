@@ -111,3 +111,30 @@ describe('inquiries inbox (platform owner)', () => {
     expect((await platform.api.get(`/platform/website/inquiries/${id}`)).status).toBe(404);
   });
 });
+
+describe('product tour, how it works, richer footer (4c)', () => {
+  it('home has the new sections; footer has buttons and columns; contact shows next steps', async () => {
+    const home = (await publicApi().get('/api/website/pages/home')).body.data.sections.map((s: { type: string }) => s.type);
+    expect(home.indexOf('steps')).toBe(home.indexOf('features_grid') + 1);
+    expect(home).toContain('showcase');
+    const site = (await publicApi().get('/api/website/site')).body.data.settings;
+    expect(site.footer.primaryCta).toEqual({ label: 'Start free', href: '/register' });
+    expect(site.footer.columns.map((c: { title: string }) => c.title)).toEqual(['Product', 'Company', 'Get started']);
+    expect(site.social).toEqual([]);
+    const contact = (await publicApi().get('/api/website/pages/contact')).body.data.sections[0].content;
+    expect(contact.nextSteps).toHaveLength(3);
+  });
+
+  it('validates showcase tabs and social links', async () => {
+    const page = (await platform.api.get('/platform/website/pages/home')).body.data;
+    const tour = page.sections.find((s: { type: string }) => s.type === 'showcase');
+    const bad = structuredClone(tour.content);
+    bad.tabs[0].mock = 'spaceship';
+    expect((await platform.api.patch(`/platform/website/sections/${tour.id}`, { content: bad })).status).toBe(400);
+    expect((await platform.api.patch(`/platform/website/sections/${tour.id}`, { content: { ...tour.content, tabs: [] } })).status).toBe(400);
+    const settings = (await platform.api.get('/platform/website/settings')).body.data.draft;
+    expect((await platform.api.put('/platform/website/settings', { ...settings, social: [{ network: 'myspace', href: 'https://x.y' }] })).status).toBe(400);
+    expect((await platform.api.put('/platform/website/settings', { ...settings, social: [{ network: 'linkedin', href: 'https://www.linkedin.com/company/x' }] })).status).toBe(200);
+    await platform.api.put('/platform/website/settings', settings);
+  });
+});
