@@ -1,14 +1,14 @@
 import { rateLimit } from 'express-rate-limit';
 import { env } from '../../config/env.js';
 
-/** Per-IP rate limiter. Disabled in the automated test run (NODE_ENV=test). */
+/** Per-IP rate limiter. Off in the automated test run (NODE_ENV=test) and with RATE_LIMIT_DISABLED=true outside production. */
 export function createRateLimiter(windowMinutes: number, limit: number, message = 'Too many attempts, please try again later') {
   return rateLimit({
     windowMs: windowMinutes * 60 * 1000,
     limit,
     standardHeaders: 'draft-8',
     legacyHeaders: false,
-    skip: () => env.nodeEnv === 'test',
+    skip: () => env.nodeEnv === 'test' || env.rateLimitDisabled,
     message: { success: false, message },
   });
 }

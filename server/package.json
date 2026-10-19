@@ -13,7 +13,8 @@
     "db:reset": "tsx src/database/init.ts --reset",
     "db:status": "tsx src/database/init.ts --status",
     "db:new": "tsx src/database/init.ts --new",
-    "db:seed-demo": "tsx scripts/seed-demo.ts"
+    "db:seed-demo": "tsx scripts/seed-demo.ts",
+    "postman:generate": "tsx scripts/postman/generate-postman.ts"
   },
   "keywords": [],
   "author": "",
