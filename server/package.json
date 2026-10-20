@@ -14,7 +14,8 @@
     "db:status": "tsx src/database/init.ts --status",
     "db:new": "tsx src/database/init.ts --new",
     "db:seed-demo": "tsx scripts/seed-demo.ts",
-    "postman:generate": "tsx scripts/postman/generate-postman.ts"
+    "postman:generate": "tsx scripts/postman/generate-postman.ts",
+    "db:install-sql": "tsx scripts/build-install-sql.ts"
   },
   "keywords": [],
   "author": "",

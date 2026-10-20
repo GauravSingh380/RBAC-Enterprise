@@ -130,6 +130,7 @@ to read welcome, invitation and password-reset emails.
 | server | `npm run db:status` | List migrations and whether they are applied |
 | server | `npm run db:new -- <name>` | Create `migrations/NNNN_<name>.sql` |
 | server | `npm run db:reset` | **Drops everything** and recreates (refused when `NODE_ENV=production`) |
+| server | `npm run db:install-sql` | Rebuild `sql/team-flex-install.sql`: the **whole database in one SQL file** (schema.sql + all migrations, one transaction, empty databases only) |
 | server | `npm run postman:generate` | Rebuild the Postman collection in `docs/postman/` from `scripts/postman/generate-postman.ts` ([guide](postman/README.md)) |
 | client | `npm run dev` / `npm run build` | Vite dev server / type-check + production build |
 | client | `npm test` / `npm run lint` | Unit tests / ESLint |
@@ -608,6 +609,8 @@ Charts follow the validated palette: two series blue / orange; severity is **ord
 | Tracked by | — | `schema_migrations` (version + SHA-256 checksum). Editing an applied migration is refused |
 
 `npm run db:init` = create DB if missing → `schema.sql` → pending migrations.
+
+**One-file install** (`server/sql/team-flex-install.sql`, built by `npm run db:install-sql`): the same thing as plain SQL, for a DBA or a managed database where you can't run Node. It runs in one transaction, stops at once if Team-Flex tables already exist, and records the migrations as applied, so a later `npm run db:init` runs only newer ones. Run it with `psql -v ON_ERROR_STOP=1 -d <db> -f team-flex-install.sql`. Rebuild it after changing `schema.sql` or adding a migration.
 Examples: `0006_security_plans_guests.sql` gave every existing organization the Guest role, granted `people.view` to the system roles and put the People menu behind it; `0005_help_center.sql` granted `guide.view` to the system roles (Admin, QA, Developer, Member) of existing organizations; `0004_organization_insights.sql` granted `insights.view` to existing Admin roles; `0003_leave_management.sql` granted the `leave.*` permissions and gave every existing organization the default leave types and calendar; `0002_qa_and_error_tracking.sql` granted `errors.*` to existing Admin / QA / Developer roles and set the QA flow on existing Bug tracking projects; `0001_grant_project_permissions.sql` gave `projects.create` / `projects.manage_all` to the Admin role of every existing organization (templates only affect new organizations).
 
 ### Tables (67)
@@ -1042,5 +1045,6 @@ Example: **Sprints** (phase 2e) — built exactly this way, see `server/src/modu
 | 22 | **3f** Checklists in items, templates + repeating work, trash (items, docs, projects; 30 days), project docs with history and search, calendar (project + My Work) with drag-to-reschedule, 4 Help Center articles |
 | 23 | **4a** Public website (separate module): Home, Features, Pricing from sections (hero slider, features, image rows, numbers, logos, testimonials, pricing from Plans, FAQ, text, CTA), header & footer, image library, draft → preview → publish in Platform → Website (replaces Platform → Home Page) |
 | 24 | **4b** Contact page with contact-form section and Inquiries inbox (notes, e-mail replies, spam protection), FAQ page, Privacy / Terms templates (published by the owner), footer links per page |
+| 27 | **One-file database install** `server/sql/team-flex-install.sql` (generated; identical result to `db:init`, guarded, single transaction) |
 | 26 | **Postman collection** for all APIs (generated, 446 requests with payloads, chained variables, negative cases; checked with newman) · `RATE_LIMIT_DISABLED` for local runs |
 | 25 | **4c** Website polish: product tour with drawn product screens, how it works, searchable FAQ help centre, redesigned contact page, dark footer with buttons and social links |
